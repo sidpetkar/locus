@@ -5,12 +5,14 @@ class MemoryItem {
   final MemoryType type;
   final String content; // text content or local path to media
   final DateTime createdAt;
+  final List<double>? waveformData; // Added for audio visuals
 
   MemoryItem({
     required this.id,
     required this.type,
     required this.content,
     required this.createdAt,
+    this.waveformData,
   });
 
   Map<String, dynamic> toJson() => {
@@ -18,6 +20,7 @@ class MemoryItem {
         'type': type.index,
         'content': content,
         'createdAt': createdAt.toIso8601String(),
+        'waveformData': waveformData,
       };
 
   factory MemoryItem.fromJson(Map<String, dynamic> json) => MemoryItem(
@@ -25,5 +28,6 @@ class MemoryItem {
         type: MemoryType.values[json['type']],
         content: json['content'],
         createdAt: DateTime.parse(json['createdAt']),
+        waveformData: json['waveformData'] != null ? List<double>.from(json['waveformData'].map((x) => x.toDouble())) : null,
       );
 }

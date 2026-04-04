@@ -6,7 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../state/calendar_state.dart';
 import 'widgets/vertical_month_grid.dart';
-import 'widgets/locus_header.dart'; // Add LocusHeader import
+import 'widgets/locus_header.dart';
+import 'widgets/locus_sidebar.dart';
 
 class CalendarHomeScreen extends StatefulWidget {
   const CalendarHomeScreen({Key? key}) : super(key: key);
@@ -213,10 +214,14 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
       debugPrint("Search failed: $e");
     }
   }
-
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<CalendarStateProvider>(context);
+    final user = provider.currentUser;
+
     return Scaffold(
+      key: GlobalKey<ScaffoldState>(), // Individual key if needed, or just use Builder
+      drawer: const LocusSidebar(),
       backgroundColor: Colors.white,
       body: SafeArea(
         child: NotificationListener<ScrollNotification>(
@@ -279,8 +284,18 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
                   child: Builder(
                     builder: (context) {
                       bool isCurrentMonth = _currentYearIndex == 500 && _currentMonthIndex == (DateTime.now().month - 1);
+                      
+                      Widget leftWidget = Image.asset('assets/locus-icon.png', width: 28, height: 28);
+                      if (user != null && user.photoURL != null) {
+                        leftWidget = CircleAvatar(
+                          radius: 14,
+                          backgroundImage: NetworkImage(user.photoURL!),
+                        );
+                      }
+
                       return LocusHeader(
-                        leftIcon: const Icon(Icons.account_circle_outlined, size: 28),
+                        leftIcon: leftWidget,
+                        onLeftTap: () => Scaffold.of(context).openDrawer(),
                         rightIcon1: isCurrentMonth ? null : const Icon(Icons.location_on_outlined, size: 28),
                         rightIcon2: const Icon(Icons.search, size: 28),
                         onRight1Tap: isCurrentMonth ? null : _jumpToPresent,
@@ -351,7 +366,7 @@ class _YearViewState extends State<_YearView> {
         final monthName = DateFormat('MMMM').format(DateTime(widget.year, month));
 
         return Padding(
-          padding: const EdgeInsets.only(top: 100.0, bottom: 8.0), // Increased from 80 to 100 for proper padding matching header height
+          padding: const EdgeInsets.only(top: 100.0), // header offset only — grid extends to bottom edge
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

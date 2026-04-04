@@ -60,6 +60,10 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
       });
     }
 
+    final isToday = widget.date!.year == DateTime.now().year &&
+                    widget.date!.month == DateTime.now().month &&
+                    widget.date!.day == DateTime.now().day;
+
     final heroTag = 'day_cell_${widget.date!.year}_${widget.date!.month}_${widget.date!.day}';
     final items = dayData.memories.take(3).toList();
 
@@ -71,6 +75,24 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
             reverseTransitionDuration: const Duration(milliseconds: 500),
             pageBuilder: (context, animation, secondaryAnimation) {
               return DayMemoryPage(date: widget.date!, heroTag: heroTag);
+            },
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+          ),
+        );
+      },
+      onDoubleTap: () {
+        Navigator.of(context).push(
+          PageRouteBuilder(
+            transitionDuration: const Duration(milliseconds: 400),
+            reverseTransitionDuration: const Duration(milliseconds: 400),
+            pageBuilder: (context, animation, secondaryAnimation) {
+              return DayMemoryPage(
+                date: widget.date!,
+                heroTag: heroTag,
+                openGalleryOnLoad: true,
+              );
             },
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               return FadeTransition(opacity: animation, child: child);
@@ -113,7 +135,9 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border.all(color: Colors.grey.shade200, width: 0.5),
+                border: isToday 
+                    ? Border.all(color: Colors.black87, width: 2.5)
+                    : Border.all(color: Colors.grey.shade200, width: 0.5),
               ),
               child: Stack(
                 children: [

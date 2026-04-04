@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "598135360819",
+    "project_id": "locus-f26d5",
+    "storage_bucket": "locus-f26d5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:598135360819:android:6f0efbf4c6625eda42c246",
+        "android_client_info": {
+          "package_name": "com.sidpetkar.locus"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "598135360819-e2g2ove1rctlvf3fdj9ku3ju01fb3nnt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtrdoWW0pkhay1ooPTv8vdv3eHrhHHB9U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "598135360819-e2g2ove1rctlvf3fdj9ku3ju01fb3nnt.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
