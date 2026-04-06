@@ -43,17 +43,18 @@ class LocusSidebar extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 20),
+              // App description
+              Text(
+                "A social experiment —\nyour life on a calendar.",
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 15,
+                  height: 1.4,
+                  color: Colors.black38,
+                ),
+              ),
 
               if (user == null) ...[
-                Text(
-                  "Capture your life,\nstored forever.",
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 20,
-                    height: 1.2,
-                    color: Colors.black54,
-                  ),
-                ),
                 const Spacer(),
                 SizedBox(
                   width: double.infinity,
@@ -88,47 +89,8 @@ class LocusSidebar extends StatelessWidget {
                   ),
                 ),
               ] else ...[
-                // User info - name + email only
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: Colors.grey.shade200,
-                      backgroundImage: user.photoURL != null
-                          ? NetworkImage(user.photoURL!)
-                          : null,
-                      child: user.photoURL == null
-                          ? const Icon(Icons.person, color: Colors.grey)
-                          : null,
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user.displayName ?? "User",
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            user.email ?? "",
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 13,
-                              color: Colors.black54,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 40),
-
-                // Menu items
+                const Spacer(),
+                // Menu items at bottom above sign out
                 _buildMenuItem(
                   icon: Icons.cloud_download_outlined,
                   label: "Import from Google",
@@ -153,8 +115,8 @@ class LocusSidebar extends StatelessWidget {
                     );
                   },
                 ),
-                const Spacer(),
-                // Sign out - simple text button, no red border
+                const SizedBox(height: 16),
+                // Sign out
                 SizedBox(
                   width: double.infinity,
                   height: 48,

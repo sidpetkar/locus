@@ -6,8 +6,6 @@ import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../state/calendar_state.dart';
 import 'widgets/locus_header.dart';
-import 'privacy_policy_page.dart';
-import 'terms_of_service_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -159,184 +157,106 @@ class _SettingsPageState extends State<SettingsPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Reuse LocusHeader
             LocusHeader(
               leftIcon: const Icon(Icons.arrow_back, size: 28, color: Colors.black87),
               onLeftTap: () => Navigator.of(context).pop(),
-              rightIcon2: null,
             ),
             Expanded(
-              child: SingleChildScrollView(
+              child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // "Settings" in same style as month header
                     Text(
                       "Settings",
                       style: GoogleFonts.spaceGrotesk(
-                        fontSize: 36,
+                        fontSize: 48,
                         fontWeight: FontWeight.bold,
-                        letterSpacing: -2,
                         color: Colors.black87,
+                        height: 1.1,
+                        letterSpacing: -2,
                       ),
                     ),
                     const SizedBox(height: 36),
 
-                    // Profile section
-                    if (user != null) ...[
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 32,
-                            backgroundColor: Colors.grey.shade200,
-                            backgroundImage: user.photoURL != null
-                                ? NetworkImage(user.photoURL!)
-                                : null,
-                            child: user.photoURL == null
-                                ? const Icon(Icons.person, size: 28, color: Colors.grey)
-                                : null,
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  user.displayName ?? "User",
-                                  style: GoogleFonts.spaceGrotesk(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  user.email ?? "",
-                                  style: GoogleFonts.spaceGrotesk(
-                                    fontSize: 14,
-                                    color: Colors.black54,
-                                  ),
-                                ),
-                                if (provider.username != null)
-                                  Text(
-                                    'mylocus.life/${provider.username}',
-                                    style: GoogleFonts.spaceGrotesk(
-                                      fontSize: 13,
-                                      color: Colors.green.shade700,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ],
+                    // Profile row
+                    if (user != null)
+                      _buildRow(
+                        leading: CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.grey.shade200,
+                          backgroundImage: user.photoURL != null
+                              ? NetworkImage(user.photoURL!)
+                              : null,
+                          child: user.photoURL == null
+                              ? const Icon(Icons.person, size: 20, color: Colors.grey)
+                              : null,
+                        ),
+                        title: user.displayName ?? "User",
+                        subtitle: user.email ?? "",
                       ),
-                      const SizedBox(height: 40),
-                    ],
+                    const SizedBox(height: 12),
 
-                    // Birthday
-                    _buildSettingTile(
-                      icon: Icons.cake_outlined,
+                    // Birthday row
+                    _buildRow(
+                      leading: const Icon(Icons.calendar_today_outlined, size: 22, color: Colors.black87),
                       title: "Birthday",
                       subtitle: _birthday ?? "Not set",
                       onTap: _showBirthdayOverlay,
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Time Awareness toggle
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.hourglass_bottom_rounded, size: 22, color: Colors.black87),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Time Awareness",
-                                  style: GoogleFonts.spaceGrotesk(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  "Momento Mori reminders",
-                                  style: GoogleFonts.spaceGrotesk(
-                                    fontSize: 13,
-                                    color: Colors.black54,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Switch.adaptive(
-                            value: _timeAwareness,
-                            onChanged: (val) => setState(() => _timeAwareness = val),
-                            activeColor: Colors.black87,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Legal
-                    Text(
-                      "Legal",
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black54,
-                      ),
+                      trailing: const Icon(Icons.chevron_right, size: 20, color: Colors.black26),
                     ),
                     const SizedBox(height: 12),
-                    _buildSettingTile(
-                      icon: Icons.shield_outlined,
-                      title: "Privacy Policy",
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const PrivacyPolicyPage()),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildSettingTile(
-                      icon: Icons.description_outlined,
-                      title: "Terms of Service",
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const TermsOfServicePage()),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
 
-                    // Sign out
-                    if (user != null) ...[
+                    // Time Awareness row
+                    _buildRow(
+                      leading: const Icon(Icons.hourglass_bottom_rounded, size: 22, color: Colors.black87),
+                      title: "Time Awareness",
+                      subtitle: "Momento Mori reminders",
+                      trailing: SizedBox(
+                        width: 44,
+                        height: 28,
+                        child: Switch(
+                          value: _timeAwareness,
+                          onChanged: (val) => setState(() => _timeAwareness = val),
+                          activeColor: Colors.white,
+                          activeTrackColor: Colors.black87,
+                          inactiveThumbColor: Colors.black54,
+                          inactiveTrackColor: Colors.transparent,
+                          trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+                            return Colors.black87;
+                          }),
+                        ),
+                      ),
+                    ),
+
+                    const Spacer(),
+
+                    // Sign out stuck at bottom
+                    if (user != null)
                       SizedBox(
                         width: double.infinity,
                         height: 48,
-                        child: OutlinedButton.icon(
+                        child: TextButton.icon(
                           onPressed: () async {
                             await authService.signOut();
                             if (context.mounted) Navigator.of(context).pop();
                           },
-                          icon: const Icon(Icons.logout, size: 18),
+                          icon: Icon(Icons.logout, size: 18, color: Colors.black54),
                           label: Text(
                             "Sign Out",
                             style: GoogleFonts.spaceGrotesk(
                               fontSize: 15,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black54,
                             ),
                           ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.red.shade600,
-                            side: BorderSide(color: Colors.red.shade200, width: 1.5),
-                            shape: const StadiumBorder(),
+                          style: TextButton.styleFrom(
+                            alignment: Alignment.centerLeft,
                           ),
                         ),
                       ),
-                    ],
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
@@ -347,51 +267,53 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildSettingTile({
-    required IconData icon,
+  Widget _buildRow({
+    required Widget leading,
     required String title,
     String? subtitle,
-    required VoidCallback onTap,
+    VoidCallback? onTap,
+    Widget? trailing,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 22, color: Colors.black87),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Row(
+        children: [
+          leading,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (subtitle != null)
                   Text(
-                    title,
+                    subtitle,
                     style: GoogleFonts.spaceGrotesk(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: Colors.black54,
                     ),
                   ),
-                  if (subtitle != null)
-                    Text(
-                      subtitle,
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 13,
-                        color: Colors.black54,
-                      ),
-                    ),
-                ],
-              ),
+              ],
             ),
-            Icon(Icons.chevron_right, size: 20, color: Colors.black26),
-          ],
-        ),
+          ),
+          if (trailing != null) trailing,
+        ],
       ),
     );
+
+    if (onTap != null) {
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: content,
+      );
+    }
+    return content;
   }
 }
