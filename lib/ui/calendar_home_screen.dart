@@ -226,14 +226,17 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
       body: SafeArea(
         child: NotificationListener<ScrollNotification>(
           onNotification: (notif) {
-            if (notif is ScrollUpdateNotification && notif.metrics.axis == Axis.vertical) {
+            // Only handle vertical scrolling from the month PageView, not horizontal year swipes
+            if (notif is ScrollUpdateNotification && 
+                notif.metrics.axis == Axis.vertical &&
+                notif.depth == 0) {
               if (notif.scrollDelta != null && notif.scrollDelta! > 2 && _isHeaderVisible) {
                 setState(() => _isHeaderVisible = false);
               } else if (notif.scrollDelta != null && notif.scrollDelta! < -2 && !_isHeaderVisible) {
                 setState(() => _isHeaderVisible = true);
               }
             }
-            if (notif is ScrollEndNotification) {
+            if (notif is ScrollEndNotification && notif.metrics.axis == Axis.vertical) {
               _headerTimer?.cancel();
               _headerTimer = Timer(const Duration(seconds: 2), () {
                 if (mounted && !_isHeaderVisible) {

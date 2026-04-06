@@ -86,6 +86,16 @@ class LocusSidebar extends StatelessWidget {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
+                              if (provider.username != null)
+                                Text(
+                                  'mylocus.life/${provider.username}',
+                                  style: GoogleFonts.spaceGrotesk(
+                                    fontSize: 12,
+                                    color: Colors.green.shade700,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               Text(
                                 user.email ?? "",
                                 style: GoogleFonts.spaceGrotesk(
@@ -100,6 +110,8 @@ class LocusSidebar extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 40),
+                    if (provider.username != null)
+                      _buildSidebarItem(Icons.link_outlined, provider.username!),
                     _buildSidebarItem(Icons.cloud_done_outlined, "Cloud Sync Active"),
                     _buildSidebarItem(Icons.storage_outlined, "Firebase Storage"),
                     const Spacer(),

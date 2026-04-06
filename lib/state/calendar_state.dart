@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../models/day_data.dart';
 import '../models/memory_item.dart';
+import '../models/user_profile.dart';
 
 class CalendarStateProvider extends ChangeNotifier {
   final Box _box;
@@ -17,10 +18,10 @@ class CalendarStateProvider extends ChangeNotifier {
   Map<String, DayData> _firestoreDataMap = {};
   
   User? _currentUser;
+  UserProfile? _userProfile;
   StreamSubscription? _authSubscription;
   StreamSubscription? _firestoreSubscription;
 
-  // For the cross-screen search highlighting
   final ValueNotifier<DateTime?> pulseDate = ValueNotifier(null);
 
   CalendarStateProvider(this._box) {
@@ -29,16 +30,30 @@ class CalendarStateProvider extends ChangeNotifier {
   }
 
   void _initAuthListener() {
-    _authSubscription = _auth.authStateChanges().listen((user) {
+    _authSubscription = _auth.authStateChanges().listen((user) async {
       _currentUser = user;
       if (user != null) {
         _setupFirestoreListener(user.uid);
+        await _loadUserProfile(user.uid);
       } else {
         _firestoreSubscription?.cancel();
         _firestoreDataMap.clear();
+        _userProfile = null;
         notifyListeners();
       }
     });
+  }
+
+  Future<void> _loadUserProfile(String uid) async {
+    try {
+      final doc = await _firestore.collection('users').doc(uid).get();
+      if (doc.exists) {
+        _userProfile = UserProfile.fromJson(doc.data()!);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint("Error loading user profile: $e");
+    }
   }
 
   void _setupFirestoreListener(String uid) {
@@ -67,6 +82,8 @@ class CalendarStateProvider extends ChangeNotifier {
 
   bool get isLoggedIn => _currentUser != null;
   User? get currentUser => _currentUser;
+  UserProfile? get userProfile => _userProfile;
+  String? get username => _userProfile?.username;
 
   void _loadFromHive() {
     _dayDataMap.clear();
