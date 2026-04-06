@@ -7,6 +7,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'state/calendar_state.dart';
 import 'ui/calendar_home_screen.dart';
+import 'ui/login_page.dart';
+import 'ui/privacy_policy_page.dart';
+import 'ui/terms_of_service_page.dart';
 import 'services/auth_service.dart';
 
 void main() async {
@@ -63,7 +66,13 @@ class LocusApp extends StatelessWidget {
         ),
         primarySwatch: Colors.blue,
       ),
-      home: const CalendarHomeScreen(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const CalendarHomeScreen(),
+        '/login': (context) => const LoginPage(),
+        '/privacy': (context) => const PrivacyPolicyPage(),
+        '/terms': (context) => const TermsOfServicePage(),
+      },
     );
   }
 }

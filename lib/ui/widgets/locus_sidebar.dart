@@ -2,11 +2,11 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'google_sign_in_button.dart';
 import '../../services/auth_service.dart';
 import '../../state/calendar_state.dart';
 import '../login_page.dart';
+import '../privacy_policy_page.dart';
+import '../terms_of_service_page.dart';
 
 class LocusSidebar extends StatelessWidget {
   const LocusSidebar({Key? key}) : super(key: key);
@@ -53,15 +53,56 @@ class LocusSidebar extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
-                    _buildGoogleButton(
-                      context: context,
-                      label: "Sign in with Google",
-                      onPressed: () {
+                    // Privacy & Terms links
+                    _buildTappableSidebarItem(
+                      Icons.shield_outlined,
+                      "Privacy Policy",
+                      () {
                         Navigator.of(context).pop();
                         Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const LoginPage()),
+                          MaterialPageRoute(builder: (_) => const PrivacyPolicyPage()),
                         );
                       },
+                    ),
+                    _buildTappableSidebarItem(
+                      Icons.description_outlined,
+                      "Terms of Service",
+                      () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const TermsOfServicePage()),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    // Sign in button - navigates to login page
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const LoginPage()),
+                          );
+                        },
+                        icon: Image.asset('assets/google-logo.png', width: 20, height: 20),
+                        label: Text(
+                          "Sign in with Google",
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black87,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
                     ),
                   ] else ...[
                     // User Profile
@@ -118,7 +159,28 @@ class LocusSidebar extends StatelessWidget {
                     _buildSidebarItem(Icons.cloud_done_outlined, "Cloud Sync Active"),
                     _buildSidebarItem(Icons.storage_outlined, "Firebase Storage"),
                     const Spacer(),
-                    
+                    // Privacy & Terms links
+                    _buildTappableSidebarItem(
+                      Icons.shield_outlined,
+                      "Privacy Policy",
+                      () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const PrivacyPolicyPage()),
+                        );
+                      },
+                    ),
+                    _buildTappableSidebarItem(
+                      Icons.description_outlined,
+                      "Terms of Service",
+                      () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const TermsOfServicePage()),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
                     // Logout button
                     Container(
                       width: double.infinity,
@@ -166,11 +228,13 @@ class LocusSidebar extends StatelessWidget {
         children: [
           Icon(icon, size: 20, color: Colors.black87),
           const SizedBox(width: 12),
-          Text(
-            label,
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -178,41 +242,28 @@ class LocusSidebar extends StatelessWidget {
     );
   }
 
-  Widget _buildGoogleButton({
-    required BuildContext context, // Added context to handle pop
-    required String label,
-    required VoidCallback onPressed,
-    bool isLogout = false,
-  }) {
-    // For Web, use the native Google Identity Services (GIS) button for "One Tap" experience
-    if (kIsWeb && !isLogout) {
-      return Center(
-        child: SizedBox(
-          height: 44, // Google's standard recommended button height
-          child: buildGoogleSignInButtonWidget(),
-        ),
-      );
-    }
-
-    return SizedBox(
-      width: double.infinity,
-      child: TextButton(
-        onPressed: onPressed,
-        style: TextButton.styleFrom(
-          backgroundColor: isLogout ? Colors.transparent : Colors.black87,
-          foregroundColor: isLogout ? Colors.redAccent : Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: isLogout ? BorderSide(color: Colors.redAccent.withOpacity(0.3)) : BorderSide.none,
-          ),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+  Widget _buildTappableSidebarItem(IconData icon, String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: Colors.black54),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black54,
+                ),
+              ),
+            ),
+            Icon(Icons.chevron_right, size: 18, color: Colors.black26),
+          ],
         ),
       ),
     );
