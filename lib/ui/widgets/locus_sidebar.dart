@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'google_sign_in_button.dart';
 import '../../services/auth_service.dart';
 import '../../state/calendar_state.dart';
+import '../login_page.dart';
 
 class LocusSidebar extends StatelessWidget {
   const LocusSidebar({Key? key}) : super(key: key);
@@ -55,9 +56,11 @@ class LocusSidebar extends StatelessWidget {
                     _buildGoogleButton(
                       context: context,
                       label: "Sign in with Google",
-                      onPressed: () async {
-                        await authService.signInWithGoogle();
+                      onPressed: () {
                         Navigator.of(context).pop();
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const LoginPage()),
+                        );
                       },
                     ),
                   ] else ...[

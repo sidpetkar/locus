@@ -102,7 +102,7 @@ class CalendarStateProvider extends ChangeNotifier {
     return _dayDataMap[key] ?? DayData(date: date, memories: []);
   }
 
-  void addMemory(DateTime date, MemoryItem item) async {
+  Future<void> addMemory(DateTime date, MemoryItem item) async {
     final key = _formatDateKey(date);
     final currentData = getDayData(date);
     final updatedMemories = List<MemoryItem>.from(currentData.memories)..add(item);
@@ -117,12 +117,12 @@ class CalendarStateProvider extends ChangeNotifier {
           .set(updatedData.toJson(), SetOptions(merge: true));
     } else {
       _dayDataMap[key] = updatedData;
-      _box.put(key, jsonEncode(updatedData.toJson()));
+      await _box.put(key, jsonEncode(updatedData.toJson()));
       notifyListeners();
     }
   }
 
-  void removeMemory(DateTime date, String itemId) async {
+  Future<void> removeMemory(DateTime date, String itemId) async {
     final key = _formatDateKey(date);
     final currentData = getDayData(date);
     
@@ -164,7 +164,7 @@ class CalendarStateProvider extends ChangeNotifier {
       }
     } else {
       _dayDataMap[key] = updatedData;
-      _box.put(key, jsonEncode(updatedData.toJson()));
+      await _box.put(key, jsonEncode(updatedData.toJson()));
       notifyListeners();
     }
   }

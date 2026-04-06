@@ -74,7 +74,7 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
     }
   }
   
-  void _saveText() {
+  Future<void> _saveText() async {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
     
@@ -84,7 +84,7 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
     final existingTextMemories = dayData.memories.where((m) => m.type == MemoryType.text).toList();
     
     if (existingTextMemories.isNotEmpty) {
-      provider.removeMemory(widget.date, existingTextMemories.first.id);
+      await provider.removeMemory(widget.date, existingTextMemories.first.id);
     }
     
     final item = MemoryItem(
@@ -93,12 +93,12 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
       content: text,
       createdAt: DateTime.now(),
     );
-    provider.addMemory(widget.date, item);
+    await provider.addMemory(widget.date, item);
   }
 
   @override
   void dispose() {
-    _saveText();
+    _saveText(); // Fire and forget is fine here since dispose can't be async
     _textController.dispose();
     _textFocusNode.dispose();
     _pageController.dispose();
@@ -596,7 +596,7 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
                                 maxLines: null,
                                 style: GoogleFonts.spaceGrotesk(
                                   fontSize: 18, 
-                                  height: 1.5,
+                                  height: 1.3,
                                 ),
                                 decoration: InputDecoration(
                                   border: InputBorder.none,
@@ -652,18 +652,20 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.mic, size: 24, color: Colors.black87),
-                        onPressed: () {
-                          _saveText();
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => RecordMemoryPage(date: widget.date),
-                            ),
-                          );
+                        onPressed: () async {
+                          await _saveText();
+                          if (mounted) {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => RecordMemoryPage(date: widget.date),
+                              ),
+                            );
+                          }
                         },
                       ),
                       TextButton(
-                        onPressed: () {
-                          _saveText();
+                        onPressed: () async {
+                          await _saveText();
                           _textFocusNode.unfocus();
                         },
                         style: TextButton.styleFrom(
