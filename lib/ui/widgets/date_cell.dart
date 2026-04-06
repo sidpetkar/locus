@@ -151,7 +151,7 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                         letterSpacing: 0, 
-                        color: widget.date!.weekday == 7 ? Colors.red : Colors.black87,
+                        color: widget.date!.weekday == 7 ? Colors.red : Colors.black54,
                       ),
                     ),
                   ),

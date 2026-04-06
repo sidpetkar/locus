@@ -7,10 +7,16 @@ FLUTTER_URL="https://storage.googleapis.com/flutter_infra_release/releases/stabl
 echo "==> Downloading Flutter SDK ${FLUTTER_VERSION}..."
 curl -fsSL "$FLUTTER_URL" -o /tmp/flutter.tar.xz
 tar xf /tmp/flutter.tar.xz -C /tmp
+
+# Fix git safe directory issue for Vercel's root user
+git config --global --add safe.directory /tmp/flutter
+git config --global --add safe.directory '*'
+
 export PATH="/tmp/flutter/bin:$PATH"
+export PUB_CACHE="/tmp/.pub-cache"
 
 echo "==> Flutter version:"
-flutter --version
+flutter --version --suppress-analytics
 
 echo "==> Getting dependencies..."
 flutter pub get
