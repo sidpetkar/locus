@@ -8,10 +8,13 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:video_compress/video_compress.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../state/calendar_state.dart';
 import '../models/memory_item.dart';
-import 'widgets/locus_header.dart'; // To use identical header design just not identical actions
+import 'widgets/locus_header.dart';
 import 'widgets/media_carousel_item.dart';
 import 'record_memory_page.dart';
 
@@ -52,13 +55,50 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
         _isTyping = _textFocusNode.hasFocus;
       });
     });
-    if (widget.openGalleryOnLoad) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _uploadMedia());
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadExistingText();
+      if (widget.openGalleryOnLoad) {
+        _uploadMedia();
+      }
+    });
+  }
+  
+  void _loadExistingText() {
+    final provider = Provider.of<CalendarStateProvider>(context, listen: false);
+    final dayData = provider.getDayData(widget.date);
+    final textMemories = dayData.memories.where((m) => m.type == MemoryType.text).toList();
+    
+    if (textMemories.isNotEmpty) {
+      _textController.text = textMemories.first.content;
     }
+  }
+  
+  void _saveText() {
+    final text = _textController.text.trim();
+    if (text.isEmpty) return;
+    
+    final provider = Provider.of<CalendarStateProvider>(context, listen: false);
+    final dayData = provider.getDayData(widget.date);
+    
+    final existingTextMemories = dayData.memories.where((m) => m.type == MemoryType.text).toList();
+    
+    if (existingTextMemories.isNotEmpty) {
+      provider.removeMemory(widget.date, existingTextMemories.first.id);
+    }
+    
+    final item = MemoryItem(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      type: MemoryType.text,
+      content: text,
+      createdAt: DateTime.now(),
+    );
+    provider.addMemory(widget.date, item);
   }
 
   @override
   void dispose() {
+    _saveText();
     _textController.dispose();
     _textFocusNode.dispose();
     _pageController.dispose();
@@ -179,9 +219,61 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
     );
   }
 
-  Future<String?> _uploadFileToFirebase(XFile file, String userId) async {
+  Future<XFile?> _compressImage(XFile file) async {
+    if (kIsWeb) return file;
+    
     try {
-      final fileName = "${DateTime.now().millisecondsSinceEpoch}_${file.name}";
+      final dir = await getTemporaryDirectory();
+      final targetPath = '${dir.path}/${DateTime.now().millisecondsSinceEpoch}_compressed.jpg';
+      
+      final result = await FlutterImageCompress.compressAndGetFile(
+        file.path,
+        targetPath,
+        quality: 85,
+        minWidth: 1920,
+        minHeight: 1080,
+        format: CompressFormat.jpeg,
+      );
+      
+      return result;
+    } catch (e) {
+      debugPrint("Image compression error: $e");
+      return file;
+    }
+  }
+
+  Future<XFile?> _compressVideo(XFile file) async {
+    if (kIsWeb) return file;
+    
+    try {
+      final info = await VideoCompress.compressVideo(
+        file.path,
+        quality: VideoQuality.HighestQuality,
+        deleteOrigin: false,
+      );
+      
+      if (info != null && info.file != null) {
+        return XFile(info.file!.path);
+      }
+    } catch (e) {
+      debugPrint("Video compression error: $e");
+    }
+    return file;
+  }
+
+  Future<String?> _uploadFileToFirebase(XFile file, String userId, {bool isVideo = false}) async {
+    try {
+      XFile fileToUpload = file;
+      
+      if (!kIsWeb) {
+        if (isVideo) {
+          fileToUpload = await _compressVideo(file) ?? file;
+        } else {
+          fileToUpload = await _compressImage(file) ?? file;
+        }
+      }
+      
+      final fileName = "${DateTime.now().millisecondsSinceEpoch}_${fileToUpload.name}";
       final storageRef = FirebaseStorage.instance
           .ref()
           .child('users')
@@ -191,9 +283,9 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
 
       TaskSnapshot uploadTask;
       if (kIsWeb) {
-        uploadTask = await storageRef.putData(await file.readAsBytes());
+        uploadTask = await storageRef.putData(await fileToUpload.readAsBytes());
       } else {
-        uploadTask = await storageRef.putFile(File(file.path));
+        uploadTask = await storageRef.putFile(File(fileToUpload.path));
       }
       return await uploadTask.ref.getDownloadURL();
     } catch (e) {
@@ -210,15 +302,20 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
         setState(() => _isUploading = true);
         
         for (var mediaFile in medias) {
+          final isVideo = mediaFile.name.toLowerCase().endsWith('.mp4') || 
+                          mediaFile.name.toLowerCase().endsWith('.mov') ||
+                          mediaFile.name.toLowerCase().endsWith('.avi');
+          
           String content = mediaFile.path;
           
           if (provider.isLoggedIn) {
-            final url = await _uploadFileToFirebase(mediaFile, provider.currentUser!.uid);
+            final url = await _uploadFileToFirebase(
+              mediaFile, 
+              provider.currentUser!.uid,
+              isVideo: isVideo,
+            );
             if (url != null) content = url;
           }
-
-          final isVideo = mediaFile.name.toLowerCase().endsWith('.mp4') || 
-                          mediaFile.name.toLowerCase().endsWith('.mov');
           
           final item = MemoryItem(
             id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -245,7 +342,11 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
         
         String content = image.path;
         if (provider.isLoggedIn) {
-          final url = await _uploadFileToFirebase(image, provider.currentUser!.uid);
+          final url = await _uploadFileToFirebase(
+            image, 
+            provider.currentUser!.uid,
+            isVideo: false,
+          );
           if (url != null) content = url;
         }
 
@@ -551,12 +652,19 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.mic, size: 24, color: Colors.black87),
-                        onPressed: () {},
+                        onPressed: () {
+                          _saveText();
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => RecordMemoryPage(date: widget.date),
+                            ),
+                          );
+                        },
                       ),
                       TextButton(
                         onPressed: () {
+                          _saveText();
                           _textFocusNode.unfocus();
-                          // In real implementation, save text here.
                         },
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.white,
