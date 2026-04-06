@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_profile.dart';
 
@@ -37,14 +37,18 @@ class AuthService {
 
       final userCredential = await _auth.signInWithCredential(credential);
       
-      // Create or update user profile with username
+      // Profile creation is non-blocking -- don't let it fail the sign-in
       if (userCredential.user != null) {
-        await _createOrUpdateUserProfile(userCredential.user!);
+        try {
+          await _createOrUpdateUserProfile(userCredential.user!);
+        } catch (e) {
+          debugPrint("Profile creation failed (non-fatal): $e");
+        }
       }
       
       return userCredential;
     } catch (e) {
-      print("Error signing in with Google: $e");
+      debugPrint("Error signing in with Google: $e");
       return null;
     }
   }
@@ -107,7 +111,7 @@ class AuthService {
         return UserProfile.fromJson(doc.data()!);
       }
     } catch (e) {
-      print("Error fetching user profile: $e");
+      debugPrint("Error fetching user profile: $e");
     }
     return null;
   }
@@ -120,7 +124,7 @@ class AuthService {
         return getUserProfile(uid);
       }
     } catch (e) {
-      print("Error fetching user by username: $e");
+      debugPrint("Error fetching user by username: $e");
     }
     return null;
   }

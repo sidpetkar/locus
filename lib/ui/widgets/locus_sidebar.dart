@@ -85,7 +85,7 @@ class LocusSidebar extends StatelessWidget {
                             MaterialPageRoute(builder: (_) => const LoginPage()),
                           );
                         },
-                        icon: Image.asset('assets/google-logo.png', width: 20, height: 20),
+                        icon: const Icon(Icons.login, size: 20),
                         label: Text(
                           "Sign in with Google",
                           style: GoogleFonts.spaceGrotesk(
