@@ -288,11 +288,28 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
                   builder: (ctx) {
                     bool isCurrentMonth = _currentYearIndex == 500 && _currentMonthIndex == (DateTime.now().month - 1);
                     
-                    Widget leftWidget = Image.asset('assets/locus-icon.png', width: 28, height: 28);
+                    Widget leftWidget;
                     if (user != null && user.photoURL != null) {
-                      leftWidget = CircleAvatar(
-                        radius: 14,
-                        backgroundImage: NetworkImage(user.photoURL!),
+                      leftWidget = Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          image: DecorationImage(
+                            image: NetworkImage(user.photoURL!),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      );
+                    } else {
+                      leftWidget = Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.grey.shade200,
+                        ),
+                        child: Icon(Icons.person, size: 18, color: Colors.grey.shade500),
                       );
                     }
 

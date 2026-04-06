@@ -1,9 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
-import '../state/calendar_state.dart';
 import 'privacy_policy_page.dart';
 import 'terms_of_service_page.dart';
 
@@ -19,17 +17,15 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _handleGoogleSignIn() async {
     setState(() => _isLoading = true);
-    
+
     final authService = AuthService();
     final result = await authService.signInWithGoogle();
-    
+
     if (!mounted) return;
-    
+
     if (result != null) {
-      // Success - navigate back
       Navigator.of(context).pop();
     } else {
-      // Show error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -50,7 +46,6 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: Stack(
           children: [
-            // Back button
             Positioned(
               top: 16,
               left: 16,
@@ -59,23 +54,18 @@ class _LoginPageState extends State<LoginPage> {
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
-            
-            // Main content
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // App icon
                     Image.asset(
                       'assets/locus-icon.png',
                       width: 120,
                       height: 120,
                     ),
                     const SizedBox(height: 48),
-                    
-                    // Welcome text
                     Text(
                       "Welcome to",
                       style: GoogleFonts.spaceGrotesk(
@@ -105,8 +95,8 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     const SizedBox(height: 64),
-                    
-                    // Google Sign In button
+
+                    // Google Sign In button - fully round (StadiumBorder)
                     SizedBox(
                       width: double.infinity,
                       height: 56,
@@ -116,9 +106,7 @@ class _LoginPageState extends State<LoginPage> {
                           backgroundColor: Colors.black87,
                           foregroundColor: Colors.white,
                           disabledBackgroundColor: Colors.grey.shade300,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
+                          shape: const StadiumBorder(),
                           elevation: 0,
                         ),
                         child: _isLoading
@@ -133,24 +121,10 @@ class _LoginPageState extends State<LoginPage> {
                             : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Container(
+                                  Image.asset(
+                                    'assets/google-g-logo.png',
                                     width: 24,
                                     height: 24,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    padding: const EdgeInsets.all(3),
-                                    child: Text(
-                                      'G',
-                                      textAlign: TextAlign.center,
-                                      style: GoogleFonts.roboto(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                        color: const Color(0xFF4285F4),
-                                        height: 1.1,
-                                      ),
-                                    ),
                                   ),
                                   const SizedBox(width: 12),
                                   Text(
@@ -165,7 +139,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     const SizedBox(height: 32),
-                    
+
                     // Terms and Privacy
                     Text.rich(
                       TextSpan(
