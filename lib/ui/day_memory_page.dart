@@ -903,8 +903,8 @@ class _AudioPillState extends State<_AudioPill> {
                 }
               },
               child: SizedBox(
-                width: 100,
-                height: 36,
+                width: 80,
+                height: 28,
                 child: samples.isEmpty
                     ? Row(
                         mainAxisAlignment: MainAxisAlignment.center,

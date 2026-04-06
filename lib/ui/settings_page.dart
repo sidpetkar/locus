@@ -41,23 +41,20 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Container(
               color: Colors.white.withOpacity(0.1),
               child: SafeArea(
-                child: Stack(
+                child: Column(
                   children: [
-                    Positioned(
-                      top: 16,
-                      left: 16,
-                      child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.black87, size: 28),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
+                    LocusHeader(
+                      leftIcon: const Icon(Icons.close, size: 28, color: Colors.black87),
+                      onLeftTap: () => Navigator.of(context).pop(),
                     ),
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                    Expanded(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                             Text(
                               "When were\nyou born?",
                               style: GoogleFonts.spaceGrotesk(
@@ -133,6 +130,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                       ),
                     ),
+                    ),
                   ],
                 ),
               ),
@@ -184,13 +182,13 @@ class _SettingsPageState extends State<SettingsPage> {
                     if (user != null)
                       _buildRow(
                         leading: CircleAvatar(
-                          radius: 20,
+                          radius: 11,
                           backgroundColor: Colors.grey.shade200,
                           backgroundImage: user.photoURL != null
                               ? NetworkImage(user.photoURL!)
                               : null,
                           child: user.photoURL == null
-                              ? const Icon(Icons.person, size: 20, color: Colors.grey)
+                              ? const Icon(Icons.person, size: 14, color: Colors.grey)
                               : null,
                         ),
                         title: user.displayName ?? "User",
@@ -237,22 +235,23 @@ class _SettingsPageState extends State<SettingsPage> {
                       SizedBox(
                         width: double.infinity,
                         height: 48,
-                        child: TextButton.icon(
+                        child: OutlinedButton.icon(
                           onPressed: () async {
                             await authService.signOut();
                             if (context.mounted) Navigator.of(context).pop();
                           },
-                          icon: Icon(Icons.logout, size: 18, color: Colors.black54),
+                          icon: Icon(Icons.logout, size: 18),
                           label: Text(
                             "Sign Out",
                             style: GoogleFonts.spaceGrotesk(
                               fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black54,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          style: TextButton.styleFrom(
-                            alignment: Alignment.centerLeft,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red.shade600,
+                            side: BorderSide(color: Colors.red.shade300, width: 1.5),
+                            shape: const StadiumBorder(),
                           ),
                         ),
                       ),
