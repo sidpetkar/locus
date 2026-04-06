@@ -135,13 +135,10 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: isToday 
-                    ? Border.all(color: Colors.black87, width: 2.5)
-                    : Border.all(color: Colors.grey.shade200, width: 0.5),
+                border: Border.all(color: Colors.grey.shade200, width: 0.5),
               ),
               child: Stack(
                 children: [
-                  // Text formatting updated to 0 letterSpacing
                   Positioned(
                     top: 8,
                     right: 8,
@@ -150,8 +147,13 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
                       style: GoogleFonts.spaceGrotesk(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        letterSpacing: 0, 
-                        color: widget.date!.weekday == 7 ? Colors.red : Colors.black54,
+                        letterSpacing: 0,
+                        color: widget.date!.weekday == 7 
+                            ? Colors.red 
+                            : (isToday ? Colors.black87 : Colors.black54),
+                        decoration: isToday ? TextDecoration.underline : null,
+                        decorationColor: Colors.black87,
+                        decorationThickness: 2.0,
                       ),
                     ),
                   ),
