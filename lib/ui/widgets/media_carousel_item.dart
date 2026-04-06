@@ -18,27 +18,24 @@ class _MediaCarouselItemState extends State<MediaCarouselItem> {
   bool _isPlaying = true;
   bool _isMuted = true;
 
+  bool get _isNetworkContent =>
+      widget.memory.content.startsWith('http://') ||
+      widget.memory.content.startsWith('https://');
+
   @override
   void initState() {
     super.initState();
     if (widget.memory.type == MemoryType.video) {
-      if (kIsWeb) {
-        _videoController = VideoPlayerController.networkUrl(Uri.parse(widget.memory.content))
-          ..initialize().then((_) {
-            _videoController!.setVolume(0.0);
-            _videoController!.setLooping(true);
-            _videoController!.play();
-            if (mounted) setState(() {});
-          });
-      } else {
-        _videoController = VideoPlayerController.file(File(widget.memory.content))
-          ..initialize().then((_) {
-            _videoController!.setVolume(0.0);
-            _videoController!.setLooping(true);
-            _videoController!.play();
-            if (mounted) setState(() {});
-          });
-      }
+      final useNetwork = kIsWeb || _isNetworkContent;
+      _videoController = useNetwork
+          ? VideoPlayerController.networkUrl(Uri.parse(widget.memory.content))
+          : VideoPlayerController.file(File(widget.memory.content));
+      _videoController!.initialize().then((_) {
+        _videoController!.setVolume(0.0);
+        _videoController!.setLooping(true);
+        _videoController!.play();
+        if (mounted) setState(() {});
+      });
     }
   }
 
@@ -71,28 +68,30 @@ class _MediaCarouselItemState extends State<MediaCarouselItem> {
   @override
   Widget build(BuildContext context) {
     if (widget.memory.type == MemoryType.image) {
-      return kIsWeb 
-          ? Image.network(
-              widget.memory.content, 
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
-                    SizedBox(height: 8),
-                    Text("Image unavailable\n(Web session reset)", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
-                  ]
-                )
-              ),
-            )
-          : Image.file(
-              File(widget.memory.content), 
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const Center(
-                child: Icon(Icons.broken_image, size: 48, color: Colors.grey)
-              ),
-            );
+      final useNetwork = kIsWeb || _isNetworkContent;
+      if (useNetwork) {
+        return Image.network(
+          widget.memory.content,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => const Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
+                SizedBox(height: 8),
+                Text("Image unavailable", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+              ],
+            ),
+          ),
+        );
+      }
+      return Image.file(
+        File(widget.memory.content),
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => const Center(
+          child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+        ),
+      );
     }
 
     if (widget.memory.type == MemoryType.video && _videoController != null && _videoController!.value.isInitialized) {

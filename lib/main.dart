@@ -11,22 +11,24 @@ import 'services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize Firebase
-  if (kIsWeb) {
-    await Firebase.initializeApp(
-      options: const FirebaseOptions(
-        apiKey: "AIzaSyBCBAo0wEDyzGI8_fwYyGwW1Maex1v_lps",
-        authDomain: "locus-f26d5.firebaseapp.com",
-        projectId: "locus-f26d5",
-        storageBucket: "locus-f26d5.firebasestorage.app",
-        messagingSenderId: "598135360819",
-        appId: "1:598135360819:web:7ac98809fb07673b42c246",
-      ),
-    );
-  } else {
-    // For Android/iOS, it will use the added google-services.json natively
-    await Firebase.initializeApp();
+
+  try {
+    if (kIsWeb) {
+      await Firebase.initializeApp(
+        options: const FirebaseOptions(
+          apiKey: "AIzaSyBCBAo0wEDyzGI8_fwYyGwW1Maex1v_lps",
+          authDomain: "locus-f26d5.firebaseapp.com",
+          projectId: "locus-f26d5",
+          storageBucket: "locus-f26d5.firebasestorage.app",
+          messagingSenderId: "598135360819",
+          appId: "1:598135360819:web:7ac98809fb07673b42c246",
+        ),
+      );
+    } else {
+      await Firebase.initializeApp();
+    }
+  } catch (e) {
+    debugPrint('Firebase initialization error: $e');
   }
 
   await Hive.initFlutter();

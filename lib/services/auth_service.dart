@@ -3,9 +3,13 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class AuthService {
+  static const _webClientId =
+      '598135360819-e2g2ove1rctlvf3fdj9ku3ju01fb3nnt.apps.googleusercontent.com';
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn googleSignIn = GoogleSignIn(
-    clientId: '598135360819-e2g2ove1rctlvf3fdj9ku3ju01fb3nnt.apps.googleusercontent.com',
+    clientId: kIsWeb ? _webClientId : null,
+    serverClientId: kIsWeb ? null : _webClientId,
   );
 
   Stream<User?> get user => _auth.authStateChanges();

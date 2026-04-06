@@ -180,16 +180,16 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
                                 ),
                                 clipBehavior: Clip.antiAlias, // Ensures internal image is clipped
                                 child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(9), // Inner clip radius to match outer border natively
-                                  child: m.type == MemoryType.image 
-                                      ? (kIsWeb 
+                                  borderRadius: BorderRadius.circular(9),
+                                  child: m.type == MemoryType.image
+                                      ? ((kIsWeb || m.content.startsWith('http'))
                                           ? Image.network(
-                                              m.content, fit: BoxFit.cover, 
-                                              errorBuilder: (_,__,___) => const Icon(Icons.error_outline, size: 14, color: Colors.grey)
+                                              m.content, fit: BoxFit.cover,
+                                              errorBuilder: (_,__,___) => const Icon(Icons.error_outline, size: 14, color: Colors.grey),
                                             )
                                           : Image.file(
                                               File(m.content), fit: BoxFit.cover,
-                                              errorBuilder: (_,__,___) => const Icon(Icons.error_outline, size: 14, color: Colors.grey)
+                                              errorBuilder: (_,__,___) => const Icon(Icons.error_outline, size: 14, color: Colors.grey),
                                             ))
                                       : const Icon(Icons.videocam, size: 16, color: Colors.black54),
                                 ),
