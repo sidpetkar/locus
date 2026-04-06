@@ -224,47 +224,45 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
       drawer: const LocusSidebar(),
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: NotificationListener<ScrollNotification>(
-          onNotification: (notif) {
-            // Only handle vertical scrolling from the month PageView, not horizontal year swipes
-            if (notif is ScrollUpdateNotification && 
-                notif.metrics.axis == Axis.vertical &&
-                notif.depth == 0) {
-              if (notif.scrollDelta != null && notif.scrollDelta! > 2 && _isHeaderVisible) {
-                setState(() => _isHeaderVisible = false);
-              } else if (notif.scrollDelta != null && notif.scrollDelta! < -2 && !_isHeaderVisible) {
-                setState(() => _isHeaderVisible = true);
-              }
-            }
-            if (notif is ScrollEndNotification && notif.metrics.axis == Axis.vertical) {
-              _headerTimer?.cancel();
-              _headerTimer = Timer(const Duration(seconds: 2), () {
-                if (mounted && !_isHeaderVisible) {
-                  setState(() => _isHeaderVisible = true);
+        child: Stack(
+          children: [
+            PageView.builder(
+              controller: _yearController,
+              scrollDirection: Axis.horizontal,
+              itemCount: 1000,
+              onPageChanged: (yearIndex) {
+                setState(() {
+                  _currentYearIndex = yearIndex;
+                });
+              },
+              itemBuilder: (context, yearIndex) {
+                final int year = getYearFromIndex(yearIndex);
+                
+                if(!_yearKeys.containsKey(yearIndex)) {
+                  _yearKeys[yearIndex] = GlobalKey<_YearViewState>();
                 }
-              });
-            }
-            return false;
-          },
-          child: Stack(
-            children: [
-              PageView.builder(
-                controller: _yearController,
-                scrollDirection: Axis.horizontal,
-                itemCount: 1000,
-                onPageChanged: (yearIndex) {
-                  setState(() {
-                    _currentYearIndex = yearIndex;
-                  });
-                },
-                itemBuilder: (context, yearIndex) {
-                  final int year = getYearFromIndex(yearIndex);
-                  
-                  if(!_yearKeys.containsKey(yearIndex)) {
-                    _yearKeys[yearIndex] = GlobalKey<_YearViewState>();
-                  }
-                  
-                  return _YearView(
+                
+                return NotificationListener<ScrollNotification>(
+                  onNotification: (notif) {
+                    // Only handle vertical scrolling for header hiding
+                    if (notif is ScrollUpdateNotification && notif.metrics.axis == Axis.vertical) {
+                      if (notif.scrollDelta != null && notif.scrollDelta! > 2 && _isHeaderVisible) {
+                        setState(() => _isHeaderVisible = false);
+                      } else if (notif.scrollDelta != null && notif.scrollDelta! < -2 && !_isHeaderVisible) {
+                        setState(() => _isHeaderVisible = true);
+                      }
+                    }
+                    if (notif is ScrollEndNotification && notif.metrics.axis == Axis.vertical) {
+                      _headerTimer?.cancel();
+                      _headerTimer = Timer(const Duration(seconds: 2), () {
+                        if (mounted && !_isHeaderVisible) {
+                          setState(() => _isHeaderVisible = true);
+                        }
+                      });
+                    }
+                    return false;
+                  },
+                  child: _YearView(
                     key: _yearKeys[yearIndex],
                     year: year,
                     initialMonthIndex: _currentMonthIndex,
@@ -273,43 +271,43 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
                         _currentMonthIndex = monthIndex;
                       });
                     },
-                  );
-                },
-              ),
-              
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                top: _isHeaderVisible ? 0 : -100, 
-                left: 0, right: 0,
-                child: Container(
-                  color: Colors.white.withOpacity(0.95), // Give it a slight backdrop so content underneath doesn't clash while scrolling
-                  child: Builder(
-                    builder: (context) {
-                      bool isCurrentMonth = _currentYearIndex == 500 && _currentMonthIndex == (DateTime.now().month - 1);
-                      
-                      Widget leftWidget = Image.asset('assets/locus-icon.png', width: 28, height: 28);
-                      if (user != null && user.photoURL != null) {
-                        leftWidget = CircleAvatar(
-                          radius: 14,
-                          backgroundImage: NetworkImage(user.photoURL!),
-                        );
-                      }
-
-                      return LocusHeader(
-                        leftIcon: leftWidget,
-                        onLeftTap: () => Scaffold.of(context).openDrawer(),
-                        rightIcon1: isCurrentMonth ? null : const Icon(Icons.location_on_outlined, size: 28),
-                        rightIcon2: const Icon(Icons.search, size: 28),
-                        onRight1Tap: isCurrentMonth ? null : _jumpToPresent,
-                        onRight2Tap: _showSearchOverlay,
+                  ),
+                );
+              },
+            ),
+            
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              top: _isHeaderVisible ? 0 : -100, 
+              left: 0, right: 0,
+              child: Container(
+                color: Colors.white.withOpacity(0.95),
+                child: Builder(
+                  builder: (context) {
+                    bool isCurrentMonth = _currentYearIndex == 500 && _currentMonthIndex == (DateTime.now().month - 1);
+                    
+                    Widget leftWidget = Image.asset('assets/locus-icon.png', width: 28, height: 28);
+                    if (user != null && user.photoURL != null) {
+                      leftWidget = CircleAvatar(
+                        radius: 14,
+                        backgroundImage: NetworkImage(user.photoURL!),
                       );
                     }
-                  ),
+
+                    return LocusHeader(
+                      leftIcon: leftWidget,
+                      onLeftTap: () => Scaffold.of(context).openDrawer(),
+                      rightIcon1: isCurrentMonth ? null : const Icon(Icons.location_on_outlined, size: 28),
+                      rightIcon2: const Icon(Icons.search, size: 28),
+                      onRight1Tap: isCurrentMonth ? null : _jumpToPresent,
+                      onRight2Tap: _showSearchOverlay,
+                    );
+                  }
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

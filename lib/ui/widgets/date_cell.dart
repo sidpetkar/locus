@@ -135,7 +135,9 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border.all(color: Colors.grey.shade200, width: 0.5),
+                border: isToday
+                    ? Border.all(color: Colors.black87, width: 2.5)
+                    : Border.all(color: Colors.grey.shade200, width: 0.5),
               ),
               child: Stack(
                 children: [
@@ -151,9 +153,6 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
                         color: widget.date!.weekday == 7 
                             ? Colors.red 
                             : (isToday ? Colors.black87 : Colors.black54),
-                        decoration: isToday ? TextDecoration.underline : null,
-                        decorationColor: Colors.black87,
-                        decorationThickness: 2.0,
                       ),
                     ),
                   ),

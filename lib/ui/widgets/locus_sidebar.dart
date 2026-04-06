@@ -115,14 +115,35 @@ class LocusSidebar extends StatelessWidget {
                     _buildSidebarItem(Icons.cloud_done_outlined, "Cloud Sync Active"),
                     _buildSidebarItem(Icons.storage_outlined, "Firebase Storage"),
                     const Spacer(),
-                    _buildGoogleButton(
-                      context: context,
-                      label: "Sign out",
-                      onPressed: () async {
-                        await authService.signOut();
-                        Navigator.of(context).pop();
-                      },
-                      isLogout: true,
+                    
+                    // Logout button
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.red.shade200, width: 1.5),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: TextButton.icon(
+                        onPressed: () async {
+                          await authService.signOut();
+                          if (context.mounted) Navigator.of(context).pop();
+                        },
+                        icon: const Icon(Icons.logout, size: 20),
+                        label: Text(
+                          "Sign Out",
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.red.shade700,
+                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                   const SizedBox(height: 20),
