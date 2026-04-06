@@ -152,7 +152,10 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
                         letterSpacing: 0,
                         color: widget.date!.weekday == 7 
                             ? Colors.red 
-                            : (isToday ? Colors.black87 : Colors.black54),
+                            : (isToday ? Colors.black : Colors.black54),
+                        decoration: isToday ? TextDecoration.underline : null,
+                        decorationColor: Colors.black,
+                        decorationThickness: 2.5,
                       ),
                     ),
                   ),

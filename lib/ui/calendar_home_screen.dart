@@ -18,6 +18,7 @@ class CalendarHomeScreen extends StatefulWidget {
 
 class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
   late PageController _yearController;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   
   int _currentMonthIndex = DateTime.now().month - 1;
   int _currentYearIndex = 500;
@@ -220,7 +221,7 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
     final user = provider.currentUser;
 
     return Scaffold(
-      key: GlobalKey<ScaffoldState>(), // Individual key if needed, or just use Builder
+      key: _scaffoldKey,
       drawer: const LocusSidebar(),
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -284,7 +285,7 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
               child: Container(
                 color: Colors.white.withOpacity(0.95),
                 child: Builder(
-                  builder: (context) {
+                  builder: (ctx) {
                     bool isCurrentMonth = _currentYearIndex == 500 && _currentMonthIndex == (DateTime.now().month - 1);
                     
                     Widget leftWidget = Image.asset('assets/locus-icon.png', width: 28, height: 28);
@@ -297,7 +298,7 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
 
                     return LocusHeader(
                       leftIcon: leftWidget,
-                      onLeftTap: () => Scaffold.of(context).openDrawer(),
+                      onLeftTap: () => _scaffoldKey.currentState?.openDrawer(),
                       rightIcon1: isCurrentMonth ? null : const Icon(Icons.location_on_outlined, size: 28),
                       rightIcon2: const Icon(Icons.search, size: 28),
                       onRight1Tap: isCurrentMonth ? null : _jumpToPresent,
