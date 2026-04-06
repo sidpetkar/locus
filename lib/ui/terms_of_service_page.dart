@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'widgets/locus_header.dart';
 
 class TermsOfServicePage extends StatelessWidget {
   const TermsOfServicePage({Key? key}) : super(key: key);
@@ -8,27 +9,19 @@ class TermsOfServicePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Terms of Service',
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            LocusHeader(
+              leftIcon: const Icon(Icons.arrow_back, size: 28, color: Colors.black87),
+              onLeftTap: () => Navigator.of(context).pop(),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
             Text(
               'Last updated: ${DateTime.now().toString().split(' ')[0]}',
               style: GoogleFonts.spaceGrotesk(
@@ -146,6 +139,10 @@ class TermsOfServicePage extends StatelessWidget {
             ),
             
             const SizedBox(height: 40),
+          ],
+        ),
+              ),
+            ),
           ],
         ),
       ),

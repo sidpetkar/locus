@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../state/calendar_state.dart';
 import '../login_page.dart';
+import '../settings_page.dart';
 
 class LocusSidebar extends StatelessWidget {
   const LocusSidebar({Key? key}) : super(key: key);
@@ -26,7 +27,7 @@ class LocusSidebar extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 24),
-              // App branding: icon + Locus
+              // App branding
               Row(
                 children: [
                   Image.asset('assets/locus-icon.png', width: 32, height: 32),
@@ -54,7 +55,6 @@ class LocusSidebar extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                // Sign in button
                 SizedBox(
                   width: double.infinity,
                   height: 52,
@@ -88,11 +88,11 @@ class LocusSidebar extends StatelessWidget {
                   ),
                 ),
               ] else ...[
-                // User profile
+                // User info - name + email only
                 Row(
                   children: [
                     CircleAvatar(
-                      radius: 28,
+                      radius: 24,
                       backgroundColor: Colors.grey.shade200,
                       backgroundImage: user.photoURL != null
                           ? NetworkImage(user.photoURL!)
@@ -101,7 +101,7 @@ class LocusSidebar extends StatelessWidget {
                           ? const Icon(Icons.person, color: Colors.grey)
                           : null,
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,24 +109,14 @@ class LocusSidebar extends StatelessWidget {
                           Text(
                             user.displayName ?? "User",
                             style: GoogleFonts.spaceGrotesk(
-                              fontSize: 18,
+                              fontSize: 17,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          if (provider.username != null)
-                            Text(
-                              'mylocus.life/${provider.username}',
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 12,
-                                color: Colors.green.shade700,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
                           Text(
                             user.email ?? "",
                             style: GoogleFonts.spaceGrotesk(
-                              fontSize: 14,
+                              fontSize: 13,
                               color: Colors.black54,
                             ),
                             overflow: TextOverflow.ellipsis,
@@ -136,35 +126,91 @@ class LocusSidebar extends StatelessWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: 40),
+
+                // Menu items
+                _buildMenuItem(
+                  icon: Icons.cloud_download_outlined,
+                  label: "Import from Google",
+                  onTap: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                _buildMenuItem(
+                  icon: Icons.hourglass_bottom_rounded,
+                  label: "Momento Mori",
+                  onTap: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                _buildMenuItem(
+                  icon: Icons.settings_outlined,
+                  label: "Settings",
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SettingsPage()),
+                    );
+                  },
+                ),
                 const Spacer(),
-                // Sign out button
+                // Sign out - simple text button, no red border
                 SizedBox(
                   width: double.infinity,
                   height: 48,
-                  child: OutlinedButton.icon(
+                  child: TextButton.icon(
                     onPressed: () async {
                       await authService.signOut();
                       if (context.mounted) Navigator.of(context).pop();
                     },
-                    icon: const Icon(Icons.logout, size: 18),
+                    icon: Icon(Icons.logout, size: 18, color: Colors.black54),
                     label: Text(
                       "Sign Out",
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black54,
                       ),
                     ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red.shade600,
-                      side: BorderSide(color: Colors.red.shade200, width: 1.5),
-                      shape: const StadiumBorder(),
+                    style: TextButton.styleFrom(
+                      alignment: Alignment.centerLeft,
                     ),
                   ),
                 ),
               ],
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, size: 22, color: Colors.black87),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Icon(Icons.chevron_right, size: 18, color: Colors.black26),
+          ],
         ),
       ),
     );

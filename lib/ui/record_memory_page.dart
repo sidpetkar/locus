@@ -275,7 +275,7 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: SizedBox(
-                    height: 80,
+                    height: 120,
                     width: double.infinity,
                     child: _samples.isEmpty
                         ? Center(

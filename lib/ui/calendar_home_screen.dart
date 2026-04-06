@@ -302,15 +302,7 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
                         ),
                       );
                     } else {
-                      leftWidget = Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.grey.shade200,
-                        ),
-                        child: Icon(Icons.person, size: 18, color: Colors.grey.shade500),
-                      );
+                      leftWidget = const Icon(Icons.menu_rounded, size: 28, color: Colors.black87);
                     }
 
                     return LocusHeader(
