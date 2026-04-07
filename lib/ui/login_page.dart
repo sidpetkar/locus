@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/auth_service.dart';
+import '../theme/app_theme.dart';
 import 'privacy_policy_page.dart';
 import 'terms_of_service_page.dart';
 
@@ -41,8 +42,8 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: Stack(
           children: [
@@ -50,7 +51,7 @@ class _LoginPageState extends State<LoginPage> {
               top: 16,
               left: 16,
               child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black87, size: 28),
+                icon: Icon(Icons.arrow_back, color: colors.icon, size: 28),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
@@ -70,7 +71,7 @@ class _LoginPageState extends State<LoginPage> {
                       "Welcome to",
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 24,
-                        color: Colors.black54,
+                        color: colors.labelSecondary,
                         height: 1.2,
                       ),
                     ),
@@ -79,7 +80,7 @@ class _LoginPageState extends State<LoginPage> {
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 56,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: colors.labelPrimary,
                         height: 1.1,
                         letterSpacing: -2,
                       ),
@@ -90,32 +91,31 @@ class _LoginPageState extends State<LoginPage> {
                       textAlign: TextAlign.center,
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 18,
-                        color: Colors.black54,
+                        color: colors.labelSecondary,
                         height: 1.4,
                       ),
                     ),
                     const SizedBox(height: 64),
 
-                    // Google Sign In button - fully round (StadiumBorder)
                     SizedBox(
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _handleGoogleSignIn,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black87,
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor: Colors.grey.shade300,
+                          backgroundColor: colors.labelPrimary,
+                          foregroundColor: colors.background,
+                          disabledBackgroundColor: colors.surfaceVariant,
                           shape: const StadiumBorder(),
                           elevation: 0,
                         ),
                         child: _isLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 24,
                                 height: 24,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(colors.background),
                                 ),
                               )
                             : Row(
@@ -140,13 +140,12 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 32),
 
-                    // Terms and Privacy
                     Text.rich(
                       TextSpan(
                         text: "By signing in, you agree to our\n",
                         style: GoogleFonts.spaceGrotesk(
                           fontSize: 13,
-                          color: Colors.black54,
+                          color: colors.labelSecondary,
                           height: 1.5,
                         ),
                         children: [
@@ -154,7 +153,7 @@ class _LoginPageState extends State<LoginPage> {
                             text: "Terms of Service",
                             style: GoogleFonts.spaceGrotesk(
                               fontSize: 13,
-                              color: Colors.black87,
+                              color: colors.labelPrimary,
                               fontWeight: FontWeight.w600,
                               decoration: TextDecoration.underline,
                             ),
@@ -167,12 +166,18 @@ class _LoginPageState extends State<LoginPage> {
                                 );
                               },
                           ),
-                          const TextSpan(text: " and "),
+                          TextSpan(
+                            text: " and ",
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 13,
+                              color: colors.labelSecondary,
+                            ),
+                          ),
                           TextSpan(
                             text: "Privacy Policy",
                             style: GoogleFonts.spaceGrotesk(
                               fontSize: 13,
-                              color: Colors.black87,
+                              color: colors.labelPrimary,
                               fontWeight: FontWeight.w600,
                               decoration: TextDecoration.underline,
                             ),

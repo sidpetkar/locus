@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../theme/app_theme.dart';
 
 class LocusHeader extends StatelessWidget {
   final Widget leftIcon;
@@ -20,6 +21,7 @@ class LocusHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = context.appColors.icon;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 24),
       child: Row(
@@ -28,7 +30,7 @@ class LocusHeader extends StatelessWidget {
           IconButton(
             icon: leftIcon,
             onPressed: onLeftTap,
-            color: Colors.black87,
+            color: iconColor,
           ),
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -37,7 +39,7 @@ class LocusHeader extends StatelessWidget {
                 IconButton(
                   icon: rightIcon1!,
                   onPressed: onRight1Tap,
-                  color: Colors.black87,
+                  color: iconColor,
                 ),
                 const SizedBox(width: 8),
               ],
@@ -45,7 +47,7 @@ class LocusHeader extends StatelessWidget {
                 IconButton(
                   icon: rightIcon2!,
                   onPressed: onRight2Tap,
-                  color: Colors.black87,
+                  color: iconColor,
                 ),
             ],
           )

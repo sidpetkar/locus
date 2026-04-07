@@ -14,6 +14,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../state/calendar_state.dart';
 import '../models/memory_item.dart';
+import '../theme/app_theme.dart';
 import 'widgets/locus_header.dart';
 import 'widgets/media_carousel_item.dart';
 import 'record_memory_page.dart';
@@ -98,7 +99,7 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
 
   @override
   void dispose() {
-    _saveText(); // Fire and forget is fine here since dispose can't be async
+    _saveText();
     _textController.dispose();
     _textFocusNode.dispose();
     _pageController.dispose();
@@ -106,74 +107,71 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
   }
 
   void _showAddOverlay() {
+    final colors = context.appColors;
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Dismiss',
-      barrierColor: Colors.black.withOpacity(0.1),
-      transitionDuration: const Duration(milliseconds: 300),
+      barrierColor: colors.barrier,
+      transitionDuration: const Duration(milliseconds: 250),
       pageBuilder: (context, animation, secondaryAnimation) {
+        final c = context.appColors;
         return Scaffold(
           backgroundColor: Colors.transparent,
           body: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
-              color: Colors.white.withOpacity(0.1),
+              color: c.inputSurface,
               child: SafeArea(
-                child: Stack(
+                child: Column(
                   children: [
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "How you want\nto capture\nmemory?",
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 40,
-                                fontWeight: FontWeight.bold,
-                                height: 1.1,
-                                letterSpacing: -2,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 60),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _buildOverlayOption(Icons.camera_alt_outlined, "Capture", () {
-                                  Navigator.of(context).pop();
-                                  _captureCamera();
-                                }),
-                                _buildOverlayOption(Icons.file_upload_outlined, "Upload", () {
-                                  Navigator.of(context).pop();
-                                  _uploadMedia();
-                                }),
-                                _buildOverlayOption(Icons.mic_none, "Record", () {
-                                  Navigator.of(context).pop();
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => RecordMemoryPage(date: widget.date),
-                                    ),
-                                  );
-                                }),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
+                    LocusHeader(
+                      leftIcon: const Icon(Icons.close, size: 28),
+                      onLeftTap: () => Navigator.of(context).pop(),
                     ),
-                    Positioned(
-                      bottom: 16,
-                      right: 16,
-                      child: FloatingActionButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        backgroundColor: Colors.black87,
-                        elevation: 0,
-                        shape: const CircleBorder(),
-                        child: const Icon(Icons.close, color: Colors.white),
+                    Expanded(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "How do you\nwant to capture\nthis memory?",
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 40,
+                                  fontWeight: FontWeight.bold,
+                                  height: 1.1,
+                                  letterSpacing: -2,
+                                  color: c.labelPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 60),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  _buildOverlayOption(Icons.camera_alt_outlined, "Capture", colors: c, onTap: () {
+                                    Navigator.of(context).pop();
+                                    _captureCamera();
+                                  }),
+                                  _buildOverlayOption(Icons.file_upload_outlined, "Upload", colors: c, onTap: () {
+                                    Navigator.of(context).pop();
+                                    _uploadMedia();
+                                  }),
+                                  _buildOverlayOption(Icons.mic_none, "Record", colors: c, onTap: () {
+                                    Navigator.of(context).pop();
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => RecordMemoryPage(date: widget.date),
+                                      ),
+                                    );
+                                  }),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -189,7 +187,7 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
     );
   }
 
-  Widget _buildOverlayOption(IconData icon, String label, VoidCallback onTap) {
+  Widget _buildOverlayOption(IconData icon, String label, {required AppColorTokens colors, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -199,10 +197,10 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.6),
+              color: colors.surface.withOpacity(0.6),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 32, color: Colors.black87),
+            child: Icon(icon, size: 32, color: colors.icon),
           ),
           const SizedBox(height: 12),
           Text(
@@ -211,7 +209,7 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
               fontSize: 16,
               fontWeight: FontWeight.w500,
               letterSpacing: -1,
-              color: Colors.black87,
+              color: colors.labelPrimary,
             ),
           ),
         ],
@@ -367,23 +365,20 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    String formattedDate = DateFormat('d MMMM').format(widget.date);
-    
+    final colors = context.appColors;
     final dayData = context.watch<CalendarStateProvider>().getDayData(widget.date);
     final mediaMemories = dayData.memories.where((m) => m.type == MemoryType.image || m.type == MemoryType.video).toList();
     final audioMemories = dayData.memories.where((m) => m.type == MemoryType.audio).toList();
 
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: Stack(
           children: [
             Column(
               children: [
-                // Top Header (Reusing Component Design)
                 LocusHeader(
                   leftIcon: const Icon(Icons.arrow_back),
-                  rightIcon1: _isDeleteMode ? const Icon(Icons.delete_outline, color: Colors.black87, size: 26) : null,
+                  rightIcon1: _isDeleteMode ? const Icon(Icons.delete_outline, size: 26) : null,
                   onLeftTap: () {
                     if (_isDeleteMode) {
                       setState(() => _isDeleteMode = false);
@@ -400,7 +395,7 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Header Date
+                        // Header Date — bold day/month + thin year
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Hero(
@@ -415,7 +410,7 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
                                       style: GoogleFonts.spaceGrotesk(
                                         fontSize: 48,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.black87,
+                                        color: colors.labelPrimary,
                                         height: 1.1,
                                         letterSpacing: -2,
                                       ),
@@ -425,7 +420,7 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
                                       style: GoogleFonts.spaceGrotesk(
                                         fontSize: 48,
                                         fontWeight: FontWeight.w300,
-                                        color: Colors.black54,
+                                        color: colors.labelSecondary,
                                         height: 1.1,
                                         letterSpacing: -2,
                                       ),
@@ -437,32 +432,31 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
                           ),
                         ),
                         
-                        // Isolation logic for Delete Mode
                         if (_isDeleteMode)
                           const SizedBox(height: 60),
 
                         if (!_isDeleteMode && !_isTyping && mediaMemories.isEmpty)
                           GestureDetector(
-                            onTap: _uploadMedia, // Open gallery instantly instead of the overlay
+                            onTap: _uploadMedia,
                             child: Container(
                               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                               height: 380,
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: Colors.grey.shade100,
+                                color: colors.surfaceVariant,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.add, size: 28, color: Colors.black54),
+                                  Icon(Icons.add, size: 28, color: colors.labelSecondary),
                                   const SizedBox(height: 12),
                                   Text(
                                     "This looks empty add\nyour memory",
                                     textAlign: TextAlign.center,
                                     style: GoogleFonts.spaceGrotesk(
                                       fontSize: 16,
-                                      color: Colors.grey.shade500,
+                                      color: colors.labelTertiary,
                                     ),
                                   ),
                                 ],
@@ -508,9 +502,9 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
                                           maintainState: true,
                                           child: Container(
                                             margin: const EdgeInsets.symmetric(horizontal: 3),
-                                            decoration: BoxDecoration(
+                                            decoration: const BoxDecoration(
                                               color: Colors.transparent,
-                                              borderRadius: BorderRadius.circular(16),
+                                              borderRadius: BorderRadius.all(Radius.circular(16)),
                                             ),
                                             clipBehavior: Clip.antiAlias,
                                             child: MediaCarouselItem(memory: memory),
@@ -521,8 +515,7 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
                                   ),
                                 ),
                                 const SizedBox(height: 16),
-                                // Dot indicator
-                                 if (mediaMemories.isNotEmpty && !_isDeleteMode)
+                                if (mediaMemories.isNotEmpty && !_isDeleteMode)
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: List.generate(mediaMemories.length, (index) {
@@ -532,7 +525,9 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
                                         width: _currentImageIndex == index ? 24 : 8,
                                         height: 8,
                                         decoration: BoxDecoration(
-                                          color: _currentImageIndex == index ? Colors.black87 : Colors.grey.shade300,
+                                          color: _currentImageIndex == index
+                                              ? colors.labelPrimary
+                                              : colors.carouselDotInactive,
                                           borderRadius: BorderRadius.circular(4),
                                         ),
                                       );
@@ -577,9 +572,9 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
                         GestureDetector(
                           behavior: HitTestBehavior.translucent,
                           onVerticalDragUpdate: (details) {
-                            if (details.delta.dy < -5) { // Swiped up
+                            if (details.delta.dy < -5) {
                               _textFocusNode.requestFocus();
-                            } else if (details.delta.dy > 5) { // Swiped down
+                            } else if (details.delta.dy > 5) {
                               _textFocusNode.unfocus();
                             }
                           },
@@ -602,7 +597,7 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
                                   border: InputBorder.none,
                                   hintText: 'Write a memory...',
                                   hintStyle: GoogleFonts.spaceGrotesk(
-                                    color: Colors.grey.shade400,
+                                    color: colors.labelTertiary,
                                   ),
                                 ),
                               ),
@@ -618,22 +613,22 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
 
             // Deletion Confirmation Modal
             if (_showConfirmModal)
-              _buildConfirmationDialog(),
+              _buildConfirmationDialog(colors),
 
             // Uploading progress overlay
             if (_isUploading)
               Positioned.fill(
                 child: Container(
-                  color: Colors.white.withOpacity(0.5),
+                  color: colors.background.withOpacity(0.5),
                   child: Center(
                     child: Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: colors.surface,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20)],
                       ),
-                      child: const CircularProgressIndicator(color: Colors.black87),
+                      child: CircularProgressIndicator(color: colors.labelPrimary),
                     ),
                   ),
                 ),
@@ -644,14 +639,14 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
               Positioned(
                 left: 0, right: 0, bottom: 0,
                 child: Container(
-                  height: 48, // 32px constraints usually need padding
-                  color: Colors.white,
+                  height: 48,
+                  color: colors.surface,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.mic, size: 24, color: Colors.black87),
+                        icon: Icon(Icons.mic, size: 24, color: colors.icon),
                         onPressed: () async {
                           await _saveText();
                           if (mounted) {
@@ -669,8 +664,8 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
                           _textFocusNode.unfocus();
                         },
                         style: TextButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          backgroundColor: Colors.black87,
+                          foregroundColor: colors.background,
+                          backgroundColor: colors.labelPrimary,
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           minimumSize: const Size(60, 32),
                         ),
@@ -685,10 +680,10 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
       ),
       floatingActionButton: (!_isTyping && !_isDeleteMode) ? FloatingActionButton(
         onPressed: _showAddOverlay,
-        backgroundColor: Colors.black87,
+        backgroundColor: colors.labelPrimary,
         elevation: 0,
         shape: const CircleBorder(),
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Icon(Icons.add, color: colors.background),
       ) : null,
     );
   }
@@ -697,7 +692,7 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
     setState(() => _showConfirmModal = true);
   }
 
-  Widget _buildConfirmationDialog() {
+  Widget _buildConfirmationDialog(AppColorTokens colors) {
     return Positioned.fill(
       child: Container(
         color: Colors.black.withOpacity(0.05),
@@ -706,7 +701,7 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
             width: 300,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: colors.surface,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
@@ -724,6 +719,7 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
                   style: GoogleFonts.spaceGrotesk(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: colors.labelPrimary,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -732,7 +728,7 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
                   textAlign: TextAlign.center,
                   style: GoogleFonts.spaceGrotesk(
                     fontSize: 14,
-                    color: Colors.black54,
+                    color: colors.labelSecondary,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -744,7 +740,7 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
                         child: Text(
                           "Cancel",
                           style: GoogleFonts.spaceGrotesk(
-                            color: Colors.black54,
+                            color: colors.labelSecondary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -754,8 +750,8 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black87,
-                          foregroundColor: Colors.white,
+                          backgroundColor: colors.labelPrimary,
+                          foregroundColor: colors.background,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -826,7 +822,6 @@ class _AudioPillState extends State<_AudioPill> {
         _position = Duration.zero;
       });
     });
-    // Preload duration
     _preload();
   }
 
@@ -871,6 +866,7 @@ class _AudioPillState extends State<_AudioPill> {
   Widget build(BuildContext context) {
     final samples = widget.memory.waveformData ?? [];
     final displayDuration = _duration > Duration.zero ? _duration : null;
+    final colors = context.appColors;
 
     return GestureDetector(
       onTap: _toggle,
@@ -878,20 +874,18 @@ class _AudioPillState extends State<_AudioPill> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.black12),
+          border: Border.all(color: colors.divider),
           borderRadius: BorderRadius.circular(40),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Play / Pause icon
             Icon(
               _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-              color: Colors.deepPurple,
+              color: colors.accent,
               size: 22,
             ),
             const SizedBox(width: 8),
-            // Mini waveform visualiser from real data
             GestureDetector(
               onTapDown: (details) {
                 if (_duration > Duration.zero) {
@@ -915,7 +909,7 @@ class _AudioPillState extends State<_AudioPill> {
                             width: 2.5,
                             height: 6 + (i % 4) * 3.0,
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade400,
+                              color: colors.labelTertiary,
                               borderRadius: BorderRadius.circular(1),
                             ),
                           ),
@@ -928,19 +922,20 @@ class _AudioPillState extends State<_AudioPill> {
                               ? (_position.inMilliseconds /
                                   _duration.inMilliseconds)
                               : 0.0,
+                          playedColor: colors.labelPrimary,
+                          unplayedColor: colors.divider,
                         ),
                         child: const SizedBox.expand(),
                       ),
               ),
             ),
             const SizedBox(width: 8),
-            // Duration label
             Text(
               displayDuration != null ? _fmt(displayDuration) : '--:--',
               style: GoogleFonts.spaceGrotesk(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: colors.labelPrimary,
               ),
             ),
           ],
@@ -955,10 +950,16 @@ class _AudioPillState extends State<_AudioPill> {
 // ---------------------------------------------------------------------------
 class _PillWaveformPainter extends CustomPainter {
   final List<double> samples;
-  final double progress; // 0.0 – 1.0
+  final double progress;
+  final Color playedColor;
+  final Color unplayedColor;
 
-  const _PillWaveformPainter(
-      {required this.samples, required this.progress});
+  const _PillWaveformPainter({
+    required this.samples,
+    required this.progress,
+    required this.playedColor,
+    required this.unplayedColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -979,9 +980,7 @@ class _PillWaveformPainter extends CustomPainter {
     for (int i = 0; i < slice.length; i++) {
       final barH = minH + slice[i] * (size.height - minH);
       final paint = Paint()
-        ..color = i < playedBars
-            ? Colors.black87
-            : Colors.black12
+        ..color = i < playedBars ? playedColor : unplayedColor
         ..strokeWidth = barW
         ..strokeCap = StrokeCap.round;
 
@@ -1005,5 +1004,6 @@ class _PillWaveformPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_PillWaveformPainter old) =>
-      old.samples != samples || old.progress != progress;
+      old.samples != samples || old.progress != progress ||
+      old.playedColor != playedColor || old.unplayedColor != unplayedColor;
 }

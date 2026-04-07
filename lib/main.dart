@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'state/calendar_state.dart';
+import 'services/auth_service.dart';
+import 'theme/app_theme.dart';
 import 'ui/calendar_home_screen.dart';
 import 'ui/login_page.dart';
 import 'ui/privacy_policy_page.dart';
 import 'ui/terms_of_service_page.dart';
 import 'ui/settings_page.dart';
-import 'services/auth_service.dart';
+import 'ui/momento_mori_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,19 +55,13 @@ class LocusApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeMode = context.watch<CalendarStateProvider>().themeMode;
     return MaterialApp(
       title: 'Locus',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        scaffoldBackgroundColor: Colors.white,
-        textTheme: GoogleFonts.spaceGroteskTextTheme(
-          Theme.of(context).textTheme,
-        ).apply(
-          bodyColor: Colors.black,
-          displayColor: Colors.black,
-        ),
-        primarySwatch: Colors.blue,
-      ),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: themeMode,
       initialRoute: '/',
       routes: {
         '/': (context) => const CalendarHomeScreen(),
@@ -74,6 +69,7 @@ class LocusApp extends StatelessWidget {
         '/privacy': (context) => const PrivacyPolicyPage(),
         '/terms': (context) => const TermsOfServicePage(),
         '/settings': (context) => const SettingsPage(),
+        '/momento-mori': (context) => const MomentoMoriPage(),
       },
     );
   }

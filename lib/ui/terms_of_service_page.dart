@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../theme/app_theme.dart';
 import 'widgets/locus_header.dart';
 
 class TermsOfServicePage extends StatelessWidget {
@@ -7,13 +8,13 @@ class TermsOfServicePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
             LocusHeader(
-              leftIcon: const Icon(Icons.arrow_back, size: 28, color: Colors.black87),
+              leftIcon: const Icon(Icons.arrow_back, size: 28),
               onLeftTap: () => Navigator.of(context).pop(),
             ),
             Expanded(
@@ -26,7 +27,7 @@ class TermsOfServicePage extends StatelessWidget {
               'Last updated: ${DateTime.now().toString().split(' ')[0]}',
               style: GoogleFonts.spaceGrotesk(
                 fontSize: 14,
-                color: Colors.black54,
+                color: colors.labelSecondary,
               ),
             ),
             const SizedBox(height: 32),
@@ -152,28 +153,31 @@ class TermsOfServicePage extends StatelessWidget {
   Widget _buildSection(String title, String content) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 28.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
+      child: Builder(builder: (context) {
+        final colors = context.appColors;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: colors.labelPrimary,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            content,
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 15,
-              height: 1.6,
-              color: Colors.black87,
+            const SizedBox(height: 12),
+            Text(
+              content,
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 15,
+                height: 1.6,
+                color: colors.labelPrimary,
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      }),
     );
   }
 }

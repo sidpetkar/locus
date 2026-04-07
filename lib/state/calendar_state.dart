@@ -22,6 +22,9 @@ class CalendarStateProvider extends ChangeNotifier {
   StreamSubscription? _authSubscription;
   StreamSubscription? _firestoreSubscription;
 
+  DateTime? _birthday;
+  ThemeMode _themeMode = ThemeMode.system;
+
   final ValueNotifier<DateTime?> pulseDate = ValueNotifier(null);
 
   CalendarStateProvider(this._box) {
@@ -49,11 +52,43 @@ class CalendarStateProvider extends ChangeNotifier {
       final doc = await _firestore.collection('users').doc(uid).get();
       if (doc.exists) {
         _userProfile = UserProfile.fromJson(doc.data()!);
+        // Load birthday from Firestore if available
+        final data = doc.data()!;
+        if (data['birthday'] != null) {
+          _birthday = DateTime.tryParse(data['birthday'] as String);
+        }
         notifyListeners();
       }
     } catch (e) {
       debugPrint("Error loading user profile: $e");
     }
+  }
+
+  DateTime? get birthday => _birthday;
+
+  ThemeMode get themeMode => _themeMode;
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    _themeMode = mode;
+    await _box.put('app_theme_mode', mode.index);
+    notifyListeners();
+  }
+
+  Future<void> setBirthday(DateTime date) async {
+    _birthday = date;
+    // Persist locally in Hive
+    await _box.put('user_birthday', date.toIso8601String());
+    // Persist remotely if logged in
+    if (isLoggedIn) {
+      try {
+        await _firestore.collection('users').doc(_currentUser!.uid).update({
+          'birthday': date.toIso8601String(),
+        });
+      } catch (e) {
+        debugPrint("Error saving birthday to Firestore: $e");
+      }
+    }
+    notifyListeners();
   }
 
   void _setupFirestoreListener(String uid) {
@@ -88,8 +123,20 @@ class CalendarStateProvider extends ChangeNotifier {
   void _loadFromHive() {
     _dayDataMap.clear();
     for (var key in _box.keys) {
+      if (key == 'user_birthday') continue;
+      if (key == 'app_theme_mode') continue;
       final jsonStr = _box.get(key) as String;
       _dayDataMap[key.toString()] = DayData.fromJson(jsonDecode(jsonStr));
+    }
+    // Load birthday from Hive
+    final birthdayStr = _box.get('user_birthday') as String?;
+    if (birthdayStr != null) {
+      _birthday = DateTime.tryParse(birthdayStr);
+    }
+    // Load theme mode from Hive
+    final themeModeInt = _box.get('app_theme_mode') as int?;
+    if (themeModeInt != null) {
+      _themeMode = ThemeMode.values[themeModeInt.clamp(0, ThemeMode.values.length - 1)];
     }
     notifyListeners();
   }

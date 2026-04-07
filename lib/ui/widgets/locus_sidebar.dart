@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../../services/auth_service.dart';
 import '../../state/calendar_state.dart';
+import '../../theme/app_theme.dart';
 import '../login_page.dart';
 import '../settings_page.dart';
+import '../momento_mori_page.dart';
 
 class LocusSidebar extends StatelessWidget {
   const LocusSidebar({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final authService = Provider.of<AuthService>(context, listen: false);
     final provider = Provider.of<CalendarStateProvider>(context);
     final user = provider.currentUser;
+    final colors = context.appColors;
 
     return Drawer(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surface,
       elevation: 0,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       width: MediaQuery.of(context).size.width * 0.75,
@@ -38,7 +39,7 @@ class LocusSidebar extends StatelessWidget {
                       fontSize: 28,
                       fontWeight: FontWeight.w300,
                       letterSpacing: -1,
-                      color: Colors.black87,
+                      color: colors.labelPrimary,
                     ),
                   ),
                 ],
@@ -50,7 +51,7 @@ class LocusSidebar extends StatelessWidget {
                 style: GoogleFonts.spaceGrotesk(
                   fontSize: 15,
                   height: 1.4,
-                  color: Colors.black38,
+                  color: colors.labelTertiary,
                 ),
               ),
 
@@ -67,8 +68,8 @@ class LocusSidebar extends StatelessWidget {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black87,
-                      foregroundColor: Colors.white,
+                      backgroundColor: colors.labelPrimary,
+                      foregroundColor: colors.background,
                       shape: const StadiumBorder(),
                       elevation: 0,
                     ),
@@ -90,8 +91,8 @@ class LocusSidebar extends StatelessWidget {
                 ),
               ] else ...[
                 const Spacer(),
-                // Menu items at bottom above sign out
                 _buildMenuItem(
+                  colors: colors,
                   icon: Icons.cloud_download_outlined,
                   label: "Import from Google",
                   onTap: () {
@@ -99,13 +100,18 @@ class LocusSidebar extends StatelessWidget {
                   },
                 ),
                 _buildMenuItem(
+                  colors: colors,
                   icon: Icons.hourglass_bottom_rounded,
                   label: "Momento Mori",
                   onTap: () {
                     Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const MomentoMoriPage()),
+                    );
                   },
                 ),
                 _buildMenuItem(
+                  colors: colors,
                   icon: Icons.settings_outlined,
                   label: "Settings",
                   onTap: () {
@@ -114,30 +120,6 @@ class LocusSidebar extends StatelessWidget {
                       MaterialPageRoute(builder: (_) => const SettingsPage()),
                     );
                   },
-                ),
-                const SizedBox(height: 16),
-                // Sign out
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: TextButton.icon(
-                    onPressed: () async {
-                      await authService.signOut();
-                      if (context.mounted) Navigator.of(context).pop();
-                    },
-                    icon: Icon(Icons.logout, size: 18, color: Colors.black54),
-                    label: Text(
-                      "Sign Out",
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black54,
-                      ),
-                    ),
-                    style: TextButton.styleFrom(
-                      alignment: Alignment.centerLeft,
-                    ),
-                  ),
                 ),
               ],
               const SizedBox(height: 12),
@@ -149,6 +131,7 @@ class LocusSidebar extends StatelessWidget {
   }
 
   Widget _buildMenuItem({
+    required AppColorTokens colors,
     required IconData icon,
     required String label,
     required VoidCallback onTap,
@@ -160,7 +143,7 @@ class LocusSidebar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 14),
         child: Row(
           children: [
-            Icon(icon, size: 22, color: Colors.black87),
+            Icon(icon, size: 22, color: colors.icon),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
@@ -168,10 +151,11 @@ class LocusSidebar extends StatelessWidget {
                 style: GoogleFonts.spaceGrotesk(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
+                  color: colors.labelPrimary,
                 ),
               ),
             ),
-            Icon(Icons.chevron_right, size: 18, color: Colors.black26),
+            Icon(Icons.chevron_right, size: 18, color: colors.divider),
           ],
         ),
       ),

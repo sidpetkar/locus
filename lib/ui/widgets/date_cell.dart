@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../state/calendar_state.dart';
 import '../../models/memory_item.dart';
+import '../../theme/app_theme.dart';
 import '../day_memory_page.dart';
 
 class DateCell extends StatefulWidget {
@@ -38,15 +39,15 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
   Widget build(BuildContext context) {
     if (widget.date == null) {
       return Container(
-        decoration: BoxDecoration(border: Border.all(color: Colors.transparent)),
+        decoration: const BoxDecoration(border: Border.fromBorderSide(BorderSide(color: Colors.transparent))),
       );
     }
 
     final provider = context.watch<CalendarStateProvider>();
     final dayData = provider.getDayData(widget.date!);
     final hasMemories = dayData.memories.isNotEmpty;
+    final colors = context.appColors;
     
-    // Check pulse logic
     if (provider.pulseDate.value == widget.date) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -119,7 +120,7 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
                             end: Alignment(-0.5 + (_pulseController.value * 3), 1.0),
                             colors: [
                               Colors.transparent,
-                              Colors.black.withOpacity(0.15),
+                              colors.labelPrimary.withOpacity(0.15),
                               Colors.transparent
                             ],
                             stops: const [0.0, 0.5, 1.0],
@@ -134,10 +135,10 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
             },
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colors.background,
                 border: isToday
-                    ? Border.all(color: Colors.black87, width: 2.5)
-                    : Border.all(color: Colors.grey.shade200, width: 0.5),
+                    ? Border.all(color: colors.labelPrimary, width: 2.5)
+                    : Border.all(color: colors.divider, width: 0.5),
               ),
               child: Stack(
                 children: [
@@ -152,9 +153,9 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
                         letterSpacing: 0,
                         color: widget.date!.weekday == 7 
                             ? Colors.red 
-                            : (isToday ? Colors.black : Colors.black54),
+                            : (isToday ? colors.labelPrimary : colors.labelSecondary),
                         decoration: isToday ? TextDecoration.underline : null,
-                        decorationColor: Colors.black,
+                        decorationColor: colors.labelPrimary,
                         decorationThickness: 2.5,
                       ),
                     ),
@@ -162,40 +163,40 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
                   if (hasMemories)
                     Positioned(
                       bottom: 4,
-                      right: 4, // Stick bottom-right edge to match design rules securely
+                      right: 4,
                       child: SizedBox(
-                        width: 32 + ((items.length - 1) * 18.0), // Spaced out more
-                        height: 48, // Taller baseline 
+                        width: 32 + ((items.length - 1) * 18.0),
+                        height: 48,
                         child: Stack(
                           clipBehavior: Clip.none,
                           children: List.generate(items.length, (index) {
-                            int physicalIndex = items.length - 1 - index; // Ensure 0 is painted natively last
+                            int physicalIndex = items.length - 1 - index;
                             final m = items[physicalIndex];
                             
                             return Positioned(
-                              left: physicalIndex * 18.0, // Wider overlap offsets
+                              left: physicalIndex * 18.0,
                               child: Container(
                                 width: 32, 
                                 height: 48,
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.shade200,
-                                  border: Border.all(color: Colors.white, width: 3.0), // Thicker 3.0 frames
-                                  borderRadius: BorderRadius.circular(12), // Smoother large rounds
+                                  color: colors.surfaceVariant,
+                                  border: Border.all(color: colors.background, width: 3.0),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                clipBehavior: Clip.antiAlias, // Ensures internal image is clipped
+                                clipBehavior: Clip.antiAlias,
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(9),
                                   child: m.type == MemoryType.image
                                       ? ((kIsWeb || m.content.startsWith('http'))
                                           ? Image.network(
                                               m.content, fit: BoxFit.cover,
-                                              errorBuilder: (_,__,___) => const Icon(Icons.error_outline, size: 14, color: Colors.grey),
+                                              errorBuilder: (_,__,___) => Icon(Icons.error_outline, size: 14, color: colors.labelSecondary),
                                             )
                                           : Image.file(
                                               File(m.content), fit: BoxFit.cover,
-                                              errorBuilder: (_,__,___) => const Icon(Icons.error_outline, size: 14, color: Colors.grey),
+                                              errorBuilder: (_,__,___) => Icon(Icons.error_outline, size: 14, color: colors.labelSecondary),
                                             ))
-                                      : const Icon(Icons.videocam, size: 16, color: Colors.black54),
+                                      : Icon(Icons.videocam, size: 16, color: colors.labelSecondary),
                                 ),
                               ),
                             );

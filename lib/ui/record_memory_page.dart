@@ -11,6 +11,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 
 import '../state/calendar_state.dart';
 import '../models/memory_item.dart';
+import '../theme/app_theme.dart';
 
 // ---------------------------------------------------------------------------
 // State Enum
@@ -30,27 +31,22 @@ class RecordMemoryPage extends StatefulWidget {
 }
 
 class _RecordMemoryPageState extends State<RecordMemoryPage> {
-  // recorder / player
   final AudioRecorder _recorder = AudioRecorder();
   final AudioPlayer _player = AudioPlayer();
 
   _RecordPhase _phase = _RecordPhase.initial;
   String? _audioPath;
 
-  // timer
   Timer? _timer;
-  int _elapsed = 0; // seconds while recording
+  int _elapsed = 0;
 
-  // waveform – all accumulated amplitude samples
   final List<double> _samples = [];
   StreamSubscription<Amplitude>? _ampSub;
 
-  // playback
   bool _isPlaying = false;
   Duration _playDuration = Duration.zero;
   Duration _playPosition = Duration.zero;
 
-  // uploading
   bool _isSaving = false;
 
   @override
@@ -73,7 +69,6 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
       });
     });
 
-    // auto-start recording
     WidgetsBinding.instance.addPostFrameCallback((_) => _startRecording());
   }
 
@@ -101,7 +96,6 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
 
     String path;
     if (kIsWeb) {
-      // web: record to memory, audioplayers can play blob urls
       path = 'recording_${DateTime.now().millisecondsSinceEpoch}.m4a';
     } else {
       final dir = await getApplicationDocumentsDirectory();
@@ -131,7 +125,6 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
         .onAmplitudeChanged(const Duration(milliseconds: 120))
         .listen((amp) {
       if (!mounted || _phase != _RecordPhase.recording) return;
-      // clamp dB range [-60, 0] → [0, 1]
       const minDb = -60.0;
       final raw = (amp.current - minDb) / (-minDb);
       final value = raw.clamp(0.0, 1.0);
@@ -151,7 +144,6 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
       _audioPath = path;
     });
 
-    // Preload so audioplayers knows the duration
     if (path.startsWith('blob:') || path.startsWith('http')) {
       await _player.setSourceUrl(path);
     } else if (!kIsWeb) {
@@ -170,7 +162,6 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
       if (_playPosition >= _playDuration && _playDuration > Duration.zero) {
         await _player.seek(Duration.zero);
       }
-      // blob: URLs come from web recorder; http: from Firebase; otherwise device file
       final path = _audioPath!;
       if (path.startsWith('blob:') || path.startsWith('http')) {
         await _player.play(UrlSource(path));
@@ -206,7 +197,6 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
     final provider = Provider.of<CalendarStateProvider>(context, listen: false);
     String content = _audioPath!;
 
-    // Upload to Firebase if logged in and on native
     if (!kIsWeb && provider.isLoggedIn) {
       try {
         final uid = provider.currentUser!.uid;
@@ -224,7 +214,6 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
         content = url;
       } catch (e) {
         debugPrint('Audio Firebase upload error: $e');
-        // fall back to local path
       }
     }
 
@@ -261,12 +250,11 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
   // -------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: Stack(
           children: [
-            // ── Main content ───────────────────────────────────
             Column(
               children: [
                 const Spacer(flex: 3),
@@ -283,17 +271,16 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
                               height: 3,
                               width: 120,
                               decoration: BoxDecoration(
-                                color: Colors.black12,
+                                color: colors.divider,
                                 borderRadius: BorderRadius.circular(2),
                               ),
                             ),
                           )
                         : GestureDetector(
                             onTapDown: (details) {
-                              // Enable seek-on-tap during playback
                               if (_phase == _RecordPhase.stopped && _playDuration > Duration.zero) {
                                 final x = details.localPosition.dx;
-                                final width = MediaQuery.of(context).size.width - 48; // padding (24*2)
+                                final width = MediaQuery.of(context).size.width - 48;
                                 final seekPos = (x / width).clamp(0.0, 1.0);
                                 final seekDuration = Duration(milliseconds: (_playDuration.inMilliseconds * seekPos).toInt());
                                 _player.seek(seekDuration);
@@ -302,12 +289,13 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
                             child: CustomPaint(
                               painter: _WaveformPainter(
                                 samples: List<double>.from(_samples),
-                                // During playback, pass progress so bars colour black → grey
                                 progress: _phase == _RecordPhase.stopped &&
                                         _playDuration > Duration.zero
                                     ? (_playPosition.inMilliseconds /
                                         _playDuration.inMilliseconds)
                                     : (_phase == _RecordPhase.recording ? 1.0 : 0.0),
+                                playedColor: colors.labelPrimary,
+                                unplayedColor: colors.divider,
                               ),
                               child: const SizedBox.expand(),
                             ),
@@ -327,7 +315,7 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
                   style: GoogleFonts.spaceGrotesk(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: Colors.black54,
+                    color: colors.labelSecondary,
                     letterSpacing: 1,
                   ),
                 ),
@@ -338,28 +326,28 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
                 Padding(
                   padding:
                       const EdgeInsets.only(bottom: 48, left: 32, right: 32),
-                  child: _buildControls(),
+                  child: _buildControls(colors),
                 ),
               ],
             ),
 
-            // ── Close button ───────────────────────────────────
+            // Close button
             Positioned(
               top: 8,
               right: 8,
               child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.black54),
+                icon: Icon(Icons.close, color: colors.labelSecondary),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
 
-            // ── Saving overlay ─────────────────────────────────
+            // Saving overlay
             if (_isSaving) ...[
               Positioned.fill(
                 child: Container(
-                  color: Colors.white.withValues(alpha: 0.75),
-                  child: const Center(
-                    child: CircularProgressIndicator(color: Colors.black87),
+                  color: colors.background.withOpacity(0.75),
+                  child: Center(
+                    child: CircularProgressIndicator(color: colors.labelPrimary),
                   ),
                 ),
               ),
@@ -370,10 +358,9 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
     );
   }
 
-  Widget _buildControls() {
+  Widget _buildControls(AppColorTokens colors) {
     switch (_phase) {
       case _RecordPhase.recording:
-        // Stop button (square inside circle)
         return Center(
           child: GestureDetector(
             onTap: _stopRecording,
@@ -382,14 +369,14 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
               height: 72,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.black26, width: 2),
+                border: Border.all(color: colors.divider, width: 2),
               ),
               child: Center(
                 child: Container(
                   width: 26,
                   height: 26,
                   decoration: BoxDecoration(
-                    color: Colors.black87,
+                    color: colors.labelPrimary,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -403,27 +390,26 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _pillButton('Retake', _retake, outlined: true),
+            _pillButton('Retake', _retake, colors: colors),
 
-            // Play / Pause circle
             GestureDetector(
               onTap: _togglePlayback,
               child: Container(
                 width: 56,
                 height: 56,
-                decoration: const BoxDecoration(
-                  color: Colors.black87,
+                decoration: BoxDecoration(
+                  color: colors.labelPrimary,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   _isPlaying ? Icons.pause : Icons.play_arrow_rounded,
-                  color: Colors.white,
+                  color: colors.background,
                   size: 28,
                 ),
               ),
             ),
 
-            _pillButton('Save', _saveRecording),
+            _pillButton('Save', _saveRecording, colors: colors),
           ],
         );
 
@@ -432,14 +418,13 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
     }
   }
 
-  Widget _pillButton(String label, VoidCallback onTap,
-      {bool outlined = false}) {
+  Widget _pillButton(String label, VoidCallback onTap, {required AppColorTokens colors}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.black87,
+          color: colors.labelPrimary,
           borderRadius: BorderRadius.circular(30),
         ),
         child: Text(
@@ -447,7 +432,7 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
           style: GoogleFonts.spaceGrotesk(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: colors.background,
           ),
         ),
       ),
@@ -460,10 +445,16 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
 // ---------------------------------------------------------------------------
 class _WaveformPainter extends CustomPainter {
   final List<double> samples;
-  /// 0.0 = all grey (not started), 1.0 = all black (fully played / recording)
   final double progress;
+  final Color playedColor;
+  final Color unplayedColor;
 
-  const _WaveformPainter({required this.samples, this.progress = 1.0});
+  const _WaveformPainter({
+    required this.samples,
+    this.progress = 1.0,
+    required this.playedColor,
+    required this.unplayedColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -485,7 +476,7 @@ class _WaveformPainter extends CustomPainter {
     for (int i = 0; i < drawSlice.length; i++) {
       final barHeight = minBarHeight + drawSlice[i] * (size.height - minBarHeight);
       final paint = Paint()
-        ..color = i < playedCount ? Colors.black87 : Colors.black12
+        ..color = i < playedCount ? playedColor : unplayedColor
         ..strokeWidth = barWidth
         ..strokeCap = StrokeCap.round;
 
@@ -500,5 +491,6 @@ class _WaveformPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_WaveformPainter old) =>
-      old.samples != samples || old.progress != progress;
+      old.samples != samples || old.progress != progress ||
+      old.playedColor != playedColor || old.unplayedColor != unplayedColor;
 }

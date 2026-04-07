@@ -1,10 +1,11 @@
 import 'dart:ui';
-import 'dart:async'; // Add Timer import
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../state/calendar_state.dart';
+import '../theme/app_theme.dart';
 import 'widgets/vertical_month_grid.dart';
 import 'widgets/locus_header.dart';
 import 'widgets/locus_sidebar.dart';
@@ -32,7 +33,7 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
   @override
   void initState() {
     super.initState();
-    _yearController = PageController(initialPage: 500); // 500 = current year
+    _yearController = PageController(initialPage: 500);
   }
 
   @override
@@ -59,10 +60,8 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
     });
 
     if (_yearController.page?.round() == yearIndex) {
-      // Already on the same year, just animate the month
       _yearKeys[yearIndex]?.currentState?.scrollToMonth(monthIndex);
     } else {
-      // Animate year; it will spawn the new YearView at _currentMonthIndex naturally!
       _yearController.animateToPage(
         yearIndex, 
         duration: const Duration(milliseconds: 600), 
@@ -72,82 +71,95 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
   }
 
   void _showSearchOverlay() {
+    final colors = context.appColors;
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Dismiss',
-      barrierColor: Colors.black.withOpacity(0.1),
-      transitionDuration: const Duration(milliseconds: 300),
+      barrierColor: colors.barrier,
+      transitionDuration: const Duration(milliseconds: 250),
       pageBuilder: (context, animation, secondaryAnimation) {
+        final c = context.appColors;
         return Scaffold(
           backgroundColor: Colors.transparent,
           body: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
-              color: Colors.white.withOpacity(0.1),
+              color: c.inputSurface,
               child: SafeArea(
-                child: Stack(
+                child: Column(
                   children: [
-                    Positioned(
-                      top: 16,
-                      left: 16,
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.black, size: 28),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
+                    LocusHeader(
+                      leftIcon: const Icon(Icons.close, size: 28),
+                      onLeftTap: () => Navigator.of(context).pop(),
                     ),
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Where you\nwant look?",
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 40,
-                                fontWeight: FontWeight.bold,
-                                height: 1.1,
-                                letterSpacing: -2,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 40),
-                            TextField(
-                              controller: _searchController,
-                              style: GoogleFonts.spaceGrotesk(fontSize: 24, letterSpacing: -1),
-                              decoration: InputDecoration(
-                                hintText: "e.g. 14 May 2026",
-                                hintStyle: GoogleFonts.spaceGrotesk(color: Colors.grey, fontSize: 24),
-                                border: const UnderlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.black87)
-                                ),
-                                focusedBorder: const UnderlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.black87, width: 2)
+                    Expanded(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Where do you\nwant to look?",
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 40,
+                                  fontWeight: FontWeight.bold,
+                                  height: 1.1,
+                                  letterSpacing: -2,
+                                  color: c.labelPrimary,
                                 ),
                               ),
-                              onSubmitted: (val) {
-                                _handleSearch(val);
-                              },
-                            ),
-                            const SizedBox(height: 20),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.black87,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                              const SizedBox(height: 40),
+                              TextField(
+                                controller: _searchController,
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 28,
+                                  letterSpacing: -0.5,
+                                  color: c.labelPrimary,
                                 ),
-                                onPressed: () => _handleSearch(_searchController.text),
-                                child: Text(
-                                  "Search", 
-                                  style: GoogleFonts.spaceGrotesk(fontSize: 16, fontWeight: FontWeight.w600)
+                                decoration: InputDecoration(
+                                  hintText: "e.g. 14 May 2026",
+                                  hintStyle: GoogleFonts.spaceGrotesk(
+                                    color: c.labelTertiary,
+                                    fontSize: 28,
+                                  ),
+                                  border: UnderlineInputBorder(
+                                    borderSide: BorderSide(color: c.labelPrimary),
+                                  ),
+                                  focusedBorder: UnderlineInputBorder(
+                                    borderSide: BorderSide(color: c.labelPrimary, width: 2),
+                                  ),
+                                ),
+                                autofocus: true,
+                                onSubmitted: (val) {
+                                  _handleSearch(val);
+                                },
+                              ),
+                              const SizedBox(height: 28),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: c.labelPrimary,
+                                    foregroundColor: c.background,
+                                    shape: const StadiumBorder(),
+                                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                                    elevation: 0,
+                                  ),
+                                  onPressed: () => _handleSearch(_searchController.text),
+                                  child: Text(
+                                    "Search",
+                                    style: GoogleFonts.spaceGrotesk(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            )
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -167,17 +179,14 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
   void _handleSearch(String query) {
     if (query.trim().isEmpty) return;
     
-    // Simple parsing logic (MVP). In production, use natural language parser.
     try {
       final now = DateTime.now();
       int? d, m, y;
       
-      // Look for year
       final RegExp yearReg = RegExp(r'\b(20\d{2})\b');
       final yearMatch = yearReg.firstMatch(query);
       y = yearMatch != null ? int.parse(yearMatch.group(1)!) : now.year;
 
-      // Look for month word
       List<String> months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
       String qLower = query.toLowerCase();
       for (int i=0; i<months.length; i++) {
@@ -187,12 +196,10 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
         }
       }
       
-      // Look for day standalone
       final RegExp dayReg = RegExp(r'\b([1-9]|[12]\d|3[01])\b');
       final dayMatches = dayReg.allMatches(query);
       for (var match in dayMatches) {
         int parsed = int.parse(match.group(1)!);
-        // Exclude year match if it somehow conflicted (unlikely with \b bounds, but just safe)
         if (parsed != y) {
           d = parsed;
           break;
@@ -204,10 +211,9 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
         int targetYearIndex = 500 + (y - now.year);
         int targetMonthIndex = m - 1;
         
-        Navigator.of(context).pop(); // close dialog
+        Navigator.of(context).pop();
         _navigateTo(targetYearIndex, targetMonthIndex);
         
-        // Fire pulse via provider
         final DateTime targetDate = DateTime(y, m, d);
         Provider.of<CalendarStateProvider>(context, listen: false).pulseDate.value = targetDate;
       }
@@ -215,15 +221,16 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
       debugPrint("Search failed: $e");
     }
   }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<CalendarStateProvider>(context);
     final user = provider.currentUser;
+    final colors = context.appColors;
 
     return Scaffold(
       key: _scaffoldKey,
       drawer: const LocusSidebar(),
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: Stack(
           children: [
@@ -245,7 +252,6 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
                 
                 return NotificationListener<ScrollNotification>(
                   onNotification: (notif) {
-                    // Only handle vertical scrolling for header hiding
                     if (notif is ScrollUpdateNotification && notif.metrics.axis == Axis.vertical) {
                       if (notif.scrollDelta != null && notif.scrollDelta! > 2 && _isHeaderVisible) {
                         setState(() => _isHeaderVisible = false);
@@ -283,7 +289,7 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
               top: _isHeaderVisible ? 0 : -100, 
               left: 0, right: 0,
               child: Container(
-                color: Colors.white.withOpacity(0.95),
+                color: colors.background.withOpacity(0.95),
                 child: Builder(
                   builder: (ctx) {
                     bool isCurrentMonth = _currentYearIndex == 500 && _currentMonthIndex == (DateTime.now().month - 1);
@@ -302,7 +308,7 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
                         ),
                       );
                     } else {
-                      leftWidget = const Icon(Icons.menu_rounded, size: 28, color: Colors.black87);
+                      leftWidget = const Icon(Icons.menu_rounded, size: 28);
                     }
 
                     return LocusHeader(
@@ -367,6 +373,7 @@ class _YearViewState extends State<_YearView> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return PageView.builder(
       controller: _monthController,
       scrollDirection: Axis.vertical,
@@ -377,11 +384,10 @@ class _YearViewState extends State<_YearView> {
         final monthName = DateFormat('MMMM').format(DateTime(widget.year, month));
 
         return Padding(
-          padding: const EdgeInsets.only(top: 100.0), // header offset only — grid extends to bottom edge
+          padding: const EdgeInsets.only(top: 100.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: RichText(
@@ -392,7 +398,7 @@ class _YearViewState extends State<_YearView> {
                         style: GoogleFonts.spaceGrotesk(
                           fontSize: 48,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: colors.labelPrimary,
                           height: 1.1,
                           letterSpacing: -2,
                         ),
@@ -402,7 +408,7 @@ class _YearViewState extends State<_YearView> {
                         style: GoogleFonts.spaceGrotesk(
                           fontSize: 48,
                           fontWeight: FontWeight.w300,
-                          color: Colors.black54,
+                          color: colors.labelSecondary,
                           height: 1.1,
                           letterSpacing: -2,
                         ),
@@ -412,11 +418,6 @@ class _YearViewState extends State<_YearView> {
                 ),
               ),
               const SizedBox(height: 32),
-              
-              // Weekday Headers (Rows in normal calendars, but Columns here! Wait.)
-              // User said: Columns = weeks, Rows = weekdays.
-              // So we don't display Weekday headers horizontally?
-              // The reference image doesn't show headers. Let's just draw the grid.
               
               Expanded(
                 child: VerticalMonthGrid(year: widget.year, month: month),

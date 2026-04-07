@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:video_player/video_player.dart';
 import '../../models/memory_item.dart';
+import '../../theme/app_theme.dart';
 
 class MediaCarouselItem extends StatefulWidget {
   final MemoryItem memory;
@@ -67,19 +68,23 @@ class _MediaCarouselItemState extends State<MediaCarouselItem> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     if (widget.memory.type == MemoryType.image) {
       final useNetwork = kIsWeb || _isNetworkContent;
       if (useNetwork) {
         return Image.network(
           widget.memory.content,
           fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => const Center(
+          errorBuilder: (_, __, ___) => Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
-                SizedBox(height: 8),
-                Text("Image unavailable", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+                Icon(Icons.image_not_supported, size: 48, color: colors.labelSecondary),
+                const SizedBox(height: 8),
+                Text("Image unavailable",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: colors.labelSecondary)),
               ],
             ),
           ),
@@ -88,13 +93,15 @@ class _MediaCarouselItemState extends State<MediaCarouselItem> {
       return Image.file(
         File(widget.memory.content),
         fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => const Center(
-          child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+        errorBuilder: (_, __, ___) => Center(
+          child: Icon(Icons.broken_image, size: 48, color: colors.labelSecondary),
         ),
       );
     }
 
-    if (widget.memory.type == MemoryType.video && _videoController != null && _videoController!.value.isInitialized) {
+    if (widget.memory.type == MemoryType.video &&
+        _videoController != null &&
+        _videoController!.value.isInitialized) {
       return GestureDetector(
         onTap: _togglePlayPause,
         child: Stack(
@@ -109,14 +116,16 @@ class _MediaCarouselItemState extends State<MediaCarouselItem> {
               ),
             ),
             if (!_isPlaying)
-              Center(
-                child: Container(
-                  decoration: const BoxDecoration(
+              const Center(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
                     color: Colors.black54,
                     shape: BoxShape.circle,
                   ),
-                  padding: const EdgeInsets.all(16),
-                  child: const Icon(Icons.play_arrow, color: Colors.white, size: 40),
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Icon(Icons.play_arrow, color: Colors.white, size: 40),
+                  ),
                 ),
               ),
             Positioned(
@@ -124,16 +133,18 @@ class _MediaCarouselItemState extends State<MediaCarouselItem> {
               right: 12,
               child: GestureDetector(
                 onTap: _toggleMute,
-                child: Container(
+                child: DecoratedBox(
                   decoration: const BoxDecoration(
                     color: Colors.black54,
                     shape: BoxShape.circle,
                   ),
-                  padding: const EdgeInsets.all(8),
-                  child: Icon(
-                    _isMuted ? Icons.volume_off : Icons.volume_up,
-                    color: Colors.white,
-                    size: 20,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Icon(
+                      _isMuted ? Icons.volume_off : Icons.volume_up,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                 ),
               ),
@@ -144,6 +155,6 @@ class _MediaCarouselItemState extends State<MediaCarouselItem> {
     }
 
     // Fallback/Loading
-    return const Center(child: CircularProgressIndicator(color: Colors.black));
+    return Center(child: CircularProgressIndicator(color: colors.labelPrimary));
   }
 }
