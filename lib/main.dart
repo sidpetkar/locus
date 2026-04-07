@@ -55,13 +55,13 @@ class LocusApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeMode = context.watch<CalendarStateProvider>().themeMode;
+    final flutterThemeMode = context.watch<CalendarStateProvider>().flutterThemeMode;
     return MaterialApp(
       title: 'Locus',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: themeMode,
+      themeMode: flutterThemeMode,
       initialRoute: '/',
       routes: {
         '/': (context) => const CalendarHomeScreen(),

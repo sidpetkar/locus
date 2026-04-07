@@ -117,7 +117,7 @@ class AppColorTokens extends ThemeExtension<AppColorTokens> {
 // ---------------------------------------------------------------------------
 // Token definitions
 // ---------------------------------------------------------------------------
-const _lightTokens = AppColorTokens(
+const lightTokens = AppColorTokens(
   background: Color(0xFFFFFFFF),
   surface: Color(0xFFFFFFFF),
   surfaceVariant: Color(0xFFF3F3F3),       // grey.shade100 ≈
@@ -134,7 +134,7 @@ const _lightTokens = AppColorTokens(
   accent: Color(0xFF673AB7),               // Colors.deepPurple
 );
 
-const _darkTokens = AppColorTokens(
+const darkTokens = AppColorTokens(
   background: Color(0xFF0D0D0D),
   surface: Color(0xFF1A1A1A),
   surfaceVariant: Color(0xFF262626),
@@ -159,12 +159,12 @@ class AppTheme {
 
   static ThemeData get light => _build(
         brightness: Brightness.light,
-        tokens: _lightTokens,
+        tokens: lightTokens,
       );
 
   static ThemeData get dark => _build(
         brightness: Brightness.dark,
-        tokens: _darkTokens,
+        tokens: darkTokens,
       );
 
   static ThemeData _build({

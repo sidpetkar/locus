@@ -221,15 +221,19 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
     if (kIsWeb) return file;
     
     try {
+      // Check file size — skip compression if already under 500 KB
+      final bytes = await file.length();
+      if (bytes < 500 * 1024) return file;
+
       final dir = await getTemporaryDirectory();
       final targetPath = '${dir.path}/${DateTime.now().millisecondsSinceEpoch}_compressed.jpg';
       
       final result = await FlutterImageCompress.compressAndGetFile(
         file.path,
         targetPath,
-        quality: 85,
-        minWidth: 1920,
-        minHeight: 1080,
+        quality: 72,
+        minWidth: 1280,
+        minHeight: 720,
         format: CompressFormat.jpeg,
       );
       
@@ -298,23 +302,23 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
       final List<XFile> medias = await _picker.pickMultipleMedia();
       if (medias.isNotEmpty) {
         setState(() => _isUploading = true);
-        
-        for (var mediaFile in medias) {
-          final isVideo = mediaFile.name.toLowerCase().endsWith('.mp4') || 
-                          mediaFile.name.toLowerCase().endsWith('.mov') ||
-                          mediaFile.name.toLowerCase().endsWith('.avi');
-          
+
+        Future<void> processOne(XFile mediaFile) async {
+          final isVideo = mediaFile.name.toLowerCase().endsWith('.mp4') ||
+              mediaFile.name.toLowerCase().endsWith('.mov') ||
+              mediaFile.name.toLowerCase().endsWith('.avi');
+
           String content = mediaFile.path;
-          
+
           if (provider.isLoggedIn) {
             final url = await _uploadFileToFirebase(
-              mediaFile, 
+              mediaFile,
               provider.currentUser!.uid,
               isVideo: isVideo,
             );
             if (url != null) content = url;
           }
-          
+
           final item = MemoryItem(
             id: DateTime.now().millisecondsSinceEpoch.toString(),
             type: isVideo ? MemoryType.video : MemoryType.image,
@@ -323,6 +327,9 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
           );
           provider.addMemory(widget.date, item);
         }
+
+        // Upload all selected files in parallel
+        await Future.wait(medias.map(processOne));
       }
     } catch (e) {
       debugPrint("Media selection error: $e");
@@ -801,8 +808,13 @@ class _AudioPill extends StatefulWidget {
 class _AudioPillState extends State<_AudioPill> {
   final AudioPlayer _player = AudioPlayer();
   bool _isPlaying = false;
+  bool _isUnavailable = false;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
+
+  // blob: URLs are session-only in browsers — they die on page reload
+  bool get _isBlobUrl => widget.memory.content.startsWith('blob:');
+  bool get _isNetworkUrl => widget.memory.content.startsWith('http');
 
   @override
   void initState() {
@@ -827,10 +839,19 @@ class _AudioPillState extends State<_AudioPill> {
 
   Future<void> _preload() async {
     final content = widget.memory.content;
-    if (content.startsWith('http') || content.startsWith('blob:')) {
-      await _player.setSourceUrl(content);
-    } else if (!kIsWeb) {
-      await _player.setSourceDeviceFile(content);
+    // blob: URLs only live for the current browser session — skip preload
+    if (_isBlobUrl) {
+      if (mounted) setState(() => _isUnavailable = true);
+      return;
+    }
+    try {
+      if (_isNetworkUrl) {
+        await _player.setSourceUrl(content);
+      } else if (!kIsWeb) {
+        await _player.setSourceDeviceFile(content);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isUnavailable = true);
     }
   }
 
@@ -841,6 +862,7 @@ class _AudioPillState extends State<_AudioPill> {
   }
 
   Future<void> _toggle() async {
+    if (_isUnavailable) return;
     final content = widget.memory.content;
     if (_isPlaying) {
       await _player.pause();
@@ -848,10 +870,14 @@ class _AudioPillState extends State<_AudioPill> {
       if (_position >= _duration && _duration > Duration.zero) {
         await _player.seek(Duration.zero);
       }
-      if (content.startsWith('http') || content.startsWith('blob:')) {
-        await _player.play(UrlSource(content));
-      } else if (!kIsWeb) {
-        await _player.play(DeviceFileSource(content));
+      try {
+        if (_isNetworkUrl) {
+          await _player.play(UrlSource(content));
+        } else if (!kIsWeb) {
+          await _player.play(DeviceFileSource(content));
+        }
+      } catch (_) {
+        if (mounted) setState(() => _isUnavailable = true);
       }
     }
   }
@@ -867,6 +893,30 @@ class _AudioPillState extends State<_AudioPill> {
     final samples = widget.memory.waveformData ?? [];
     final displayDuration = _duration > Duration.zero ? _duration : null;
     final colors = context.appColors;
+
+    if (_isUnavailable) {
+      return GestureDetector(
+        onLongPress: widget.onLongPress,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            border: Border.all(color: colors.divider),
+            borderRadius: BorderRadius.circular(40),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.mic_off, size: 18, color: colors.labelTertiary),
+              const SizedBox(width: 8),
+              Text(
+                'Unavailable',
+                style: TextStyle(fontSize: 12, color: colors.labelTertiary),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return GestureDetector(
       onTap: _toggle,

@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../state/calendar_state.dart';
 import '../theme/app_theme.dart';
+import '../services/nudge_service.dart';
+import 'widgets/animated_headline.dart';
 import 'widgets/vertical_month_grid.dart';
 import 'widgets/locus_header.dart';
 import 'widgets/locus_sidebar.dart';
@@ -222,11 +224,25 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
     }
   }
 
+  /// Whether the currently-visible month is entirely in the future.
+  /// Used in time-aware mode to flip the header to light tokens.
+  bool _isVisibleMonthInFuture(CalendarStateProvider provider) {
+    if (!provider.isTimeAwareMode) return false;
+    final now = DateTime.now();
+    final year = getYearFromIndex(_currentYearIndex);
+    final month = _currentMonthIndex + 1;
+    return year > now.year || (year == now.year && month > now.month);
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<CalendarStateProvider>(context);
     final user = provider.currentUser;
     final colors = context.appColors;
+
+    final bool headerUsesLight = _isVisibleMonthInFuture(provider);
+    final AppColorTokens headerColors =
+        headerUsesLight ? lightTokens : colors;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -289,37 +305,40 @@ class _CalendarHomeScreenState extends State<CalendarHomeScreen> {
               top: _isHeaderVisible ? 0 : -100, 
               left: 0, right: 0,
               child: Container(
-                color: colors.background.withOpacity(0.95),
-                child: Builder(
-                  builder: (ctx) {
-                    bool isCurrentMonth = _currentYearIndex == 500 && _currentMonthIndex == (DateTime.now().month - 1);
-                    
-                    Widget leftWidget;
-                    if (user != null && user.photoURL != null) {
-                      leftWidget = Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          image: DecorationImage(
-                            image: NetworkImage(user.photoURL!),
-                            fit: BoxFit.cover,
+                color: headerColors.background.withOpacity(0.95),
+                child: Theme(
+                  data: headerUsesLight ? AppTheme.light : Theme.of(context),
+                  child: Builder(
+                    builder: (ctx) {
+                      bool isCurrentMonth = _currentYearIndex == 500 && _currentMonthIndex == (DateTime.now().month - 1);
+                      
+                      Widget leftWidget;
+                      if (user != null && user.photoURL != null) {
+                        leftWidget = Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            image: DecorationImage(
+                              image: NetworkImage(user.photoURL!),
+                              fit: BoxFit.cover,
+                            ),
                           ),
-                        ),
-                      );
-                    } else {
-                      leftWidget = const Icon(Icons.menu_rounded, size: 28);
-                    }
+                        );
+                      } else {
+                        leftWidget = const Icon(Icons.menu_rounded, size: 28);
+                      }
 
-                    return LocusHeader(
-                      leftIcon: leftWidget,
-                      onLeftTap: () => _scaffoldKey.currentState?.openDrawer(),
-                      rightIcon1: isCurrentMonth ? null : const Icon(Icons.location_on_outlined, size: 28),
-                      rightIcon2: const Icon(Icons.search, size: 28),
-                      onRight1Tap: isCurrentMonth ? null : _jumpToPresent,
-                      onRight2Tap: _showSearchOverlay,
-                    );
-                  }
+                      return LocusHeader(
+                        leftIcon: leftWidget,
+                        onLeftTap: () => _scaffoldKey.currentState?.openDrawer(),
+                        rightIcon1: isCurrentMonth ? null : const Icon(Icons.location_on_outlined, size: 28),
+                        rightIcon2: const Icon(Icons.search, size: 28),
+                        onRight1Tap: isCurrentMonth ? null : _jumpToPresent,
+                        onRight2Tap: _showSearchOverlay,
+                      );
+                    }
+                  ),
                 ),
               ),
             ),
@@ -373,7 +392,9 @@ class _YearViewState extends State<_YearView> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
+    final provider = context.watch<CalendarStateProvider>();
+    final isTimeAware = provider.isTimeAwareMode;
+
     return PageView.builder(
       controller: _monthController,
       scrollDirection: Axis.vertical,
@@ -383,41 +404,35 @@ class _YearViewState extends State<_YearView> {
         final month = monthIndex + 1;
         final monthName = DateFormat('MMMM').format(DateTime(widget.year, month));
 
-        return Padding(
+        // Determine if this entire month is in the future for time-aware theming
+        final now = DateTime.now();
+        final isMonthInFuture = isTimeAware &&
+            (widget.year > now.year ||
+                (widget.year == now.year && month > now.month));
+
+        final ThemeData? localTheme =
+            isTimeAware && isMonthInFuture ? AppTheme.light : null;
+        final Color pageBg = isTimeAware
+            ? (isMonthInFuture ? lightTokens.background : darkTokens.background)
+            : Theme.of(context).scaffoldBackgroundColor;
+
+        Widget page = Container(
+          color: pageBg,
           padding: const EdgeInsets.only(top: 100.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: RichText(
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text: monthName,
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 48,
-                          fontWeight: FontWeight.bold,
-                          color: colors.labelPrimary,
-                          height: 1.1,
-                          letterSpacing: -2,
-                        ),
-                      ),
-                      TextSpan(
-                        text: " ${widget.year}",
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 48,
-                          fontWeight: FontWeight.w300,
-                          color: colors.labelSecondary,
-                          height: 1.1,
-                          letterSpacing: -2,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: AnimatedHeadline(
+                  titleBold: monthName,
+                  titleLight: ' ${widget.year}',
+                  nudges: isTimeAware
+                      ? NudgeService.getNudgesForNow(widget.year, month)
+                      : const [],
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 12),
               
               Expanded(
                 child: VerticalMonthGrid(year: widget.year, month: month),
@@ -425,6 +440,12 @@ class _YearViewState extends State<_YearView> {
             ],
           ),
         );
+
+        if (localTheme != null) {
+          page = Theme(data: localTheme, child: page);
+        }
+
+        return page;
       },
     );
   }

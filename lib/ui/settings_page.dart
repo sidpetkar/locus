@@ -83,9 +83,9 @@ class _SettingsPageState extends State<SettingsPage> {
                                   letterSpacing: -0.5,
                                   color: c.labelPrimary,
                                 ),
-                                keyboardType: TextInputType.datetime,
+                                keyboardType: TextInputType.number,
                                 inputFormatters: [
-                                  FilteringTextInputFormatter.allow(RegExp(r'[\d/\-\.]')),
+                                  _DateInputFormatter(),
                                 ],
                                 decoration: InputDecoration(
                                   hintText: "DD/MM/YYYY",
@@ -206,30 +206,40 @@ class _SettingsPageState extends State<SettingsPage> {
                                     children: [
                                       _AppearanceOption(
                                         label: "System Default",
-                                        isSelected: provider.themeMode == ThemeMode.system,
+                                        isSelected: provider.appThemeMode == AppThemeMode.system,
                                         colors: cc,
                                         onTap: () {
-                                          provider.setThemeMode(ThemeMode.system);
+                                          provider.setAppThemeMode(AppThemeMode.system);
                                           Navigator.of(ctx).pop();
                                         },
                                       ),
                                       const SizedBox(height: 16),
                                       _AppearanceOption(
                                         label: "Light",
-                                        isSelected: provider.themeMode == ThemeMode.light,
+                                        isSelected: provider.appThemeMode == AppThemeMode.light,
                                         colors: cc,
                                         onTap: () {
-                                          provider.setThemeMode(ThemeMode.light);
+                                          provider.setAppThemeMode(AppThemeMode.light);
                                           Navigator.of(ctx).pop();
                                         },
                                       ),
                                       const SizedBox(height: 16),
                                       _AppearanceOption(
                                         label: "Dark",
-                                        isSelected: provider.themeMode == ThemeMode.dark,
+                                        isSelected: provider.appThemeMode == AppThemeMode.dark,
                                         colors: cc,
                                         onTap: () {
-                                          provider.setThemeMode(ThemeMode.dark);
+                                          provider.setAppThemeMode(AppThemeMode.dark);
+                                          Navigator.of(ctx).pop();
+                                        },
+                                      ),
+                                      const SizedBox(height: 16),
+                                      _AppearanceOption(
+                                        label: "Time Aware",
+                                        isSelected: provider.appThemeMode == AppThemeMode.timeAware,
+                                        colors: cc,
+                                        onTap: () {
+                                          provider.setAppThemeMode(AppThemeMode.timeAware);
                                           Navigator.of(ctx).pop();
                                         },
                                       ),
@@ -255,7 +265,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  /// Parses common date formats: DD/MM/YYYY, DD-MM-YYYY, D/M/YY, D/M/YYYY
   DateTime? _parseBirthday(String text) {
     if (text.isEmpty) return null;
     final separators = RegExp(r'[/\-\.]');
@@ -265,16 +274,32 @@ class _SettingsPageState extends State<SettingsPage> {
     final month = int.tryParse(parts[1]);
     int? year = int.tryParse(parts[2]);
     if (day == null || month == null || year == null) return null;
-    if (year < 100) year += 1900;
+    if (day < 1 || day > 31 || month < 1 || month > 12) return null;
+    if (year < 100) {
+      year = (year + 2000 <= DateTime.now().year) ? year + 2000 : year + 1900;
+    }
     try {
-      return DateTime(year, month, day);
+      final date = DateTime(year, month, day);
+      if (date.isAfter(DateTime.now())) return null;
+      return date;
     } catch (_) {
       return null;
     }
   }
 
   String _formatBirthday(DateTime date) {
-    return "${date.day}-${date.month}-${date.year % 100}";
+    final age = _calcAge(date);
+    return "${date.day}-${date.month}-${date.year % 100}  ($age)";
+  }
+
+  int _calcAge(DateTime birthday) {
+    final now = DateTime.now();
+    int age = now.year - birthday.year;
+    if (now.month < birthday.month ||
+        (now.month == birthday.month && now.day < birthday.day)) {
+      age--;
+    }
+    return age.clamp(0, 999);
   }
 
   @override
@@ -285,12 +310,15 @@ class _SettingsPageState extends State<SettingsPage> {
     final colors = context.appColors;
 
     String appearanceLabel;
-    switch (provider.themeMode) {
-      case ThemeMode.light:
+    switch (provider.appThemeMode) {
+      case AppThemeMode.light:
         appearanceLabel = 'Light';
         break;
-      case ThemeMode.dark:
+      case AppThemeMode.dark:
         appearanceLabel = 'Dark';
+        break;
+      case AppThemeMode.timeAware:
+        appearanceLabel = 'Time Aware';
         break;
       default:
         appearanceLabel = 'System';
@@ -472,6 +500,69 @@ class _SettingsPageState extends State<SettingsPage> {
       );
     }
     return content;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Smart date formatter: digits-only numpad input → auto-inserts slashes
+// e.g. "531998" → "5/3/1998", "05031998" → "05/03/1998"
+// ---------------------------------------------------------------------------
+class _DateInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    var digits = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+    if (digits.isEmpty) {
+      return newValue.copyWith(
+        text: '',
+        selection: const TextSelection.collapsed(offset: 0),
+      );
+    }
+    if (digits.length > 8) digits = digits.substring(0, 8);
+
+    final int dayLen = _parseDayLength(digits);
+    final String dayStr = digits.substring(0, dayLen);
+    final String afterDay = digits.substring(dayLen);
+
+    final int monthLen = afterDay.isNotEmpty ? _parseMonthLength(afterDay) : 0;
+    final String monthStr =
+        afterDay.isNotEmpty ? afterDay.substring(0, monthLen) : '';
+    String yearStr = afterDay.length > monthLen ? afterDay.substring(monthLen) : '';
+    if (yearStr.length > 4) yearStr = yearStr.substring(0, 4);
+
+    final buf = StringBuffer(dayStr);
+    if (monthStr.isNotEmpty) buf.write('/$monthStr');
+    if (yearStr.isNotEmpty) buf.write('/$yearStr');
+
+    final result = buf.toString();
+    return TextEditingValue(
+      text: result,
+      selection: TextSelection.collapsed(offset: result.length),
+    );
+  }
+
+  int _parseDayLength(String digits) {
+    if (digits.isEmpty) return 0;
+    final d0 = int.parse(digits[0]);
+    if (d0 == 0) return digits.length >= 2 ? 2 : 1;
+    if (d0 >= 4) return 1;
+    // d0 is 1-3 — could be 1-digit or start of 2-digit day
+    if (digits.length < 2) return 1;
+    final twoDigit = d0 * 10 + int.parse(digits[1]);
+    return twoDigit <= 31 ? 2 : 1;
+  }
+
+  int _parseMonthLength(String digits) {
+    if (digits.isEmpty) return 0;
+    final d0 = int.parse(digits[0]);
+    if (d0 == 0) return digits.length >= 2 ? 2 : 1;
+    if (d0 >= 2) return 1;
+    // d0 is 1 — could be month 1, or start of 10/11/12
+    if (digits.length < 2) return 1;
+    final twoDigit = d0 * 10 + int.parse(digits[1]);
+    return twoDigit <= 12 ? 2 : 1;
   }
 }
 

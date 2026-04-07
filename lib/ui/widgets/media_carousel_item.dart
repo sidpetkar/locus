@@ -76,7 +76,20 @@ class _MediaCarouselItemState extends State<MediaCarouselItem> {
         return Image.network(
           widget.memory.content,
           fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => Center(
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                    : null,
+                color: colors.labelSecondary,
+                strokeWidth: 2,
+              ),
+            );
+          },
+          errorBuilder: (_, error, ___) => Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

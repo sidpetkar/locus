@@ -30,6 +30,9 @@ class VerticalMonthGrid extends StatelessWidget {
       dayGrid[pos] = DateTime(year, month, d);
     }
 
+    final int firstDayPos = firstDayOffset;
+    final int lastDayPos = (firstDayOffset + days - 1) % 35;
+
     return Row(
       children: List.generate(5, (c) {
         return Expanded(
@@ -37,8 +40,14 @@ class VerticalMonthGrid extends StatelessWidget {
             children: List.generate(7, (r) {
               int index = c * 7 + r;
               DateTime? day = dayGrid[index];
+              final bool emptyIsBeforeMonth = day == null && index < firstDayPos;
               return Expanded(
-                child: DateCell(date: day),
+                child: DateCell(
+                  date: day,
+                  monthYear: year,
+                  monthMonth: month,
+                  emptyIsBeforeMonth: emptyIsBeforeMonth,
+                ),
               );
             }),
           ),

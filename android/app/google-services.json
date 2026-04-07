@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "598135360819-793ql3jfgvu526glb5nvgkoch6ilkiim.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.sidpetkar.locus",
+            "certificate_hash": "d67c4db47e9d9f569db6088f9b7bda5a314d770b"
+          }
+        },
+        {
           "client_id": "598135360819-e2g2ove1rctlvf3fdj9ku3ju01fb3nnt.apps.googleusercontent.com",
           "client_type": 3
         }

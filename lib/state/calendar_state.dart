@@ -9,6 +9,8 @@ import '../models/day_data.dart';
 import '../models/memory_item.dart';
 import '../models/user_profile.dart';
 
+enum AppThemeMode { system, light, dark, timeAware }
+
 class CalendarStateProvider extends ChangeNotifier {
   final Box _box;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -23,7 +25,7 @@ class CalendarStateProvider extends ChangeNotifier {
   StreamSubscription? _firestoreSubscription;
 
   DateTime? _birthday;
-  ThemeMode _themeMode = ThemeMode.system;
+  AppThemeMode _appThemeMode = AppThemeMode.system;
 
   final ValueNotifier<DateTime?> pulseDate = ValueNotifier(null);
 
@@ -66,10 +68,27 @@ class CalendarStateProvider extends ChangeNotifier {
 
   DateTime? get birthday => _birthday;
 
-  ThemeMode get themeMode => _themeMode;
+  AppThemeMode get appThemeMode => _appThemeMode;
 
-  Future<void> setThemeMode(ThemeMode mode) async {
-    _themeMode = mode;
+  bool get isTimeAwareMode => _appThemeMode == AppThemeMode.timeAware;
+
+  /// Maps our custom enum to Flutter's ThemeMode for MaterialApp.
+  /// Time-aware mode uses the dark scaffold/chrome.
+  ThemeMode get flutterThemeMode {
+    switch (_appThemeMode) {
+      case AppThemeMode.system:
+        return ThemeMode.system;
+      case AppThemeMode.light:
+        return ThemeMode.light;
+      case AppThemeMode.dark:
+        return ThemeMode.dark;
+      case AppThemeMode.timeAware:
+        return ThemeMode.dark;
+    }
+  }
+
+  Future<void> setAppThemeMode(AppThemeMode mode) async {
+    _appThemeMode = mode;
     await _box.put('app_theme_mode', mode.index);
     notifyListeners();
   }
@@ -136,7 +155,7 @@ class CalendarStateProvider extends ChangeNotifier {
     // Load theme mode from Hive
     final themeModeInt = _box.get('app_theme_mode') as int?;
     if (themeModeInt != null) {
-      _themeMode = ThemeMode.values[themeModeInt.clamp(0, ThemeMode.values.length - 1)];
+      _appThemeMode = AppThemeMode.values[themeModeInt.clamp(0, AppThemeMode.values.length - 1)];
     }
     notifyListeners();
   }
