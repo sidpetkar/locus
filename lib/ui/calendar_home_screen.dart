@@ -427,7 +427,7 @@ class _YearViewState extends State<_YearView> {
                 child: AnimatedHeadline(
                   titleBold: monthName,
                   titleLight: ' ${widget.year}',
-                  nudges: isTimeAware
+                  nudges: provider.nudgesEnabled
                       ? NudgeService.getNudgesForNow(widget.year, month)
                       : const [],
                 ),

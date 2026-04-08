@@ -298,25 +298,7 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(9),
                           child: m.type == MemoryType.image
-                              ? ((kIsWeb || m.content.startsWith('http'))
-                                  ? Image.network(
-                                      m.content,
-                                      fit: BoxFit.cover,
-                                      cacheWidth: 64,
-                                      loadingBuilder: (ctx, child, progress) =>
-                                          progress == null
-                                              ? child
-                                              : Container(color: cellColors.surfaceVariant),
-                                      errorBuilder: (_, __, ___) =>
-                                          Icon(Icons.error_outline, size: 14, color: cellColors.labelSecondary),
-                                    )
-                                  : Image.file(
-                                      File(m.content),
-                                      fit: BoxFit.cover,
-                                      cacheWidth: 64,
-                                      errorBuilder: (_, __, ___) =>
-                                          Icon(Icons.error_outline, size: 14, color: cellColors.labelSecondary),
-                                    ))
+                              ? _buildThumbnail(m.content, cellColors)
                               : Center(child: Icon(Icons.videocam, size: 16, color: cellColors.labelSecondary)),
                         ),
                       ),
@@ -327,6 +309,30 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
             ),
         ],
       ),
+    );
+  }
+
+  static Widget _buildThumbnail(String content, AppColorTokens colors) {
+    final isNetwork = content.startsWith('http') || content.startsWith('blob:');
+
+    if (kIsWeb || isNetwork) {
+      return Image.network(
+        content,
+        fit: BoxFit.cover,
+        cacheWidth: 64,
+        loadingBuilder: (ctx, child, progress) =>
+            progress == null ? child : Container(color: colors.surfaceVariant),
+        errorBuilder: (_, __, ___) =>
+            Icon(Icons.error_outline, size: 14, color: colors.labelSecondary),
+      );
+    }
+
+    return Image.file(
+      File(content),
+      fit: BoxFit.cover,
+      cacheWidth: 64,
+      errorBuilder: (_, __, ___) =>
+          Icon(Icons.error_outline, size: 14, color: colors.labelSecondary),
     );
   }
 }

@@ -42,7 +42,6 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
 
   bool _isTyping = false;
   bool _isDeleteMode = false;
-  bool _isUploading = false;
   int _currentImageIndex = 0;
   String? _deleteModeItemId;
   bool _showConfirmModal = false;
@@ -250,7 +249,7 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
     try {
       final info = await VideoCompress.compressVideo(
         file.path,
-        quality: VideoQuality.HighestQuality,
+        quality: VideoQuality.MediumQuality,
         deleteOrigin: false,
       );
       
@@ -263,10 +262,20 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
     return file;
   }
 
-  Future<String?> _uploadFileToFirebase(XFile file, String userId, {bool isVideo = false}) async {
+  // ---------------------------------------------------------------------------
+  // Background upload: compress + push to Storage, then swap URL in Firestore
+  // ---------------------------------------------------------------------------
+  Future<void> _backgroundUploadMedia(
+    XFile file,
+    CalendarStateProvider provider,
+    DateTime date,
+    String memoryId, {
+    bool isVideo = false,
+  }) async {
     try {
+      final userId = provider.currentUser!.uid;
+
       XFile fileToUpload = file;
-      
       if (!kIsWeb) {
         if (isVideo) {
           fileToUpload = await _compressVideo(file) ?? file;
@@ -274,7 +283,7 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
           fileToUpload = await _compressImage(file) ?? file;
         }
       }
-      
+
       final fileName = "${DateTime.now().millisecondsSinceEpoch}_${fileToUpload.name}";
       final storageRef = FirebaseStorage.instance
           .ref()
@@ -289,84 +298,85 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
       } else {
         uploadTask = await storageRef.putFile(File(fileToUpload.path));
       }
-      return await uploadTask.ref.getDownloadURL();
+
+      final url = await uploadTask.ref.getDownloadURL();
+      await provider.updateMemoryContent(date, memoryId, url);
     } catch (e) {
-      debugPrint("Firebase Upload Error: $e");
-      return null;
+      debugPrint("Background upload error: $e");
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Pick & save instantly, upload to Firebase in background
+  // ---------------------------------------------------------------------------
   Future<void> _uploadMedia() async {
     final provider = Provider.of<CalendarStateProvider>(context, listen: false);
+    final date = widget.date;
     try {
       final List<XFile> medias = await _picker.pickMultipleMedia();
-      if (medias.isNotEmpty) {
-        setState(() => _isUploading = true);
+      if (medias.isEmpty) return;
 
-        Future<void> processOne(XFile mediaFile) async {
-          final isVideo = mediaFile.name.toLowerCase().endsWith('.mp4') ||
-              mediaFile.name.toLowerCase().endsWith('.mov') ||
-              mediaFile.name.toLowerCase().endsWith('.avi');
+      final baseTs = DateTime.now().millisecondsSinceEpoch;
+      final items = <MemoryItem>[];
+      final queuedUploads = <({XFile file, String id, bool isVideo})>[];
 
-          String content = mediaFile.path;
+      for (int i = 0; i < medias.length; i++) {
+        final mediaFile = medias[i];
+        final isVideo = mediaFile.name.toLowerCase().endsWith('.mp4') ||
+            mediaFile.name.toLowerCase().endsWith('.mov') ||
+            mediaFile.name.toLowerCase().endsWith('.avi');
 
-          if (provider.isLoggedIn) {
-            final url = await _uploadFileToFirebase(
-              mediaFile,
-              provider.currentUser!.uid,
-              isVideo: isVideo,
-            );
-            if (url != null) content = url;
-          }
+        final id = '${baseTs + i}';
 
-          final item = MemoryItem(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            type: isVideo ? MemoryType.video : MemoryType.image,
-            content: content,
-            createdAt: DateTime.now(),
+        items.add(MemoryItem(
+          id: id,
+          type: isVideo ? MemoryType.video : MemoryType.image,
+          content: mediaFile.path,
+          createdAt: DateTime.now(),
+        ));
+        queuedUploads.add((file: mediaFile, id: id, isVideo: isVideo));
+      }
+
+      await provider.addMemories(date, items);
+
+      if (provider.isLoggedIn) {
+        for (final upload in queuedUploads) {
+          _backgroundUploadMedia(
+            upload.file,
+            provider,
+            date,
+            upload.id,
+            isVideo: upload.isVideo,
           );
-          provider.addMemory(widget.date, item);
         }
-
-        // Upload all selected files in parallel
-        await Future.wait(medias.map(processOne));
       }
     } catch (e) {
       debugPrint("Media selection error: $e");
-    } finally {
-      if (mounted) setState(() => _isUploading = false);
     }
   }
 
   Future<void> _captureCamera() async {
     final provider = Provider.of<CalendarStateProvider>(context, listen: false);
+    final date = widget.date;
     try {
       final XFile? image = await _picker.pickImage(source: ImageSource.camera);
       if (image != null) {
-        setState(() => _isUploading = true);
-        
-        String content = image.path;
-        if (provider.isLoggedIn) {
-          final url = await _uploadFileToFirebase(
-            image, 
-            provider.currentUser!.uid,
-            isVideo: false,
-          );
-          if (url != null) content = url;
-        }
+        final id = DateTime.now().millisecondsSinceEpoch.toString();
 
         final item = MemoryItem(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          id: id,
           type: MemoryType.image,
-          content: content,
+          content: image.path,
           createdAt: DateTime.now(),
         );
-        provider.addMemory(widget.date, item);
+        provider.addMemory(date, item);
+
+        if (provider.isLoggedIn) {
+          _backgroundUploadMedia(image, provider, date, id);
+        }
       }
     } catch (e) {
       debugPrint("Camera capture error: $e");
-    } finally {
-      if (mounted) setState(() => _isUploading = false);
     }
   }
 
@@ -622,25 +632,6 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
             if (_showConfirmModal)
               _buildConfirmationDialog(colors),
 
-            // Uploading progress overlay
-            if (_isUploading)
-              Positioned.fill(
-                child: Container(
-                  color: colors.background.withOpacity(0.5),
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: colors.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20)],
-                      ),
-                      child: CircularProgressIndicator(color: colors.labelPrimary),
-                    ),
-                  ),
-                ),
-              ),
-
             // Keyboard Accessory Row (Mic & Done)
             if (_isTyping)
               Positioned(
@@ -666,15 +657,16 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
                         },
                       ),
                       TextButton(
-                        onPressed: () async {
-                          await _saveText();
+                        onPressed: () {
                           _textFocusNode.unfocus();
+                          _saveText();
                         },
                         style: TextButton.styleFrom(
                           foregroundColor: colors.background,
                           backgroundColor: colors.labelPrimary,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          minimumSize: const Size(60, 32),
+                          shape: const StadiumBorder(),
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                          minimumSize: const Size(72, 34),
                         ),
                         child: Text("Done", style: GoogleFonts.spaceGrotesk(fontSize: 16, fontWeight: FontWeight.bold)),
                       )

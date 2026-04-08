@@ -47,8 +47,6 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
   Duration _playDuration = Duration.zero;
   Duration _playPosition = Duration.zero;
 
-  bool _isSaving = false;
-
   @override
   void initState() {
     super.initState();
@@ -191,42 +189,52 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
   // Save
   // -------------------------------------------------------------------------
   Future<void> _saveRecording() async {
-    if (_audioPath == null || _isSaving) return;
-    setState(() => _isSaving = true);
+    if (_audioPath == null) return;
 
     final provider = Provider.of<CalendarStateProvider>(context, listen: false);
-    String content = _audioPath!;
-
-    if (!kIsWeb && provider.isLoggedIn) {
-      try {
-        final uid = provider.currentUser!.uid;
-        final fileName =
-            'recording_${DateTime.now().millisecondsSinceEpoch}.m4a';
-        final ref = FirebaseStorage.instance
-            .ref()
-            .child('users')
-            .child(uid)
-            .child('audio')
-            .child(fileName);
-
-        final task = await ref.putFile(File(_audioPath!));
-        final url = await task.ref.getDownloadURL();
-        content = url;
-      } catch (e) {
-        debugPrint('Audio Firebase upload error: $e');
-      }
-    }
+    final date = widget.date;
+    final localPath = _audioPath!;
+    final id = DateTime.now().millisecondsSinceEpoch.toString();
 
     final item = MemoryItem(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: id,
       type: MemoryType.audio,
-      content: content,
+      content: localPath,
       createdAt: DateTime.now(),
       waveformData: List<double>.from(_samples),
     );
+    provider.addMemory(date, item);
 
-    provider.addMemory(widget.date, item);
+    // Fire background upload before popping so the Future stays alive
+    if (provider.isLoggedIn && !kIsWeb) {
+      _backgroundUploadAudio(provider, date, id, localPath);
+    }
+
     if (mounted) Navigator.of(context).pop();
+  }
+
+  Future<void> _backgroundUploadAudio(
+    CalendarStateProvider provider,
+    DateTime date,
+    String memoryId,
+    String localPath,
+  ) async {
+    try {
+      final uid = provider.currentUser!.uid;
+      final fileName = 'recording_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('users')
+          .child(uid)
+          .child('audio')
+          .child(fileName);
+
+      final task = await ref.putFile(File(localPath));
+      final url = await task.ref.getDownloadURL();
+      await provider.updateMemoryContent(date, memoryId, url);
+    } catch (e) {
+      debugPrint('Audio background upload error: $e');
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -341,17 +349,7 @@ class _RecordMemoryPageState extends State<RecordMemoryPage> {
               ),
             ),
 
-            // Saving overlay
-            if (_isSaving) ...[
-              Positioned.fill(
-                child: Container(
-                  color: colors.background.withOpacity(0.75),
-                  child: Center(
-                    child: CircularProgressIndicator(color: colors.labelPrimary),
-                  ),
-                ),
-              ),
-            ],
+            // (upload runs silently in background after save)
           ],
         ),
       ),

@@ -21,7 +21,8 @@ class _MediaCarouselItemState extends State<MediaCarouselItem> {
 
   bool get _isNetworkContent =>
       widget.memory.content.startsWith('http://') ||
-      widget.memory.content.startsWith('https://');
+      widget.memory.content.startsWith('https://') ||
+      widget.memory.content.startsWith('blob:');
 
   @override
   void initState() {
@@ -71,8 +72,7 @@ class _MediaCarouselItemState extends State<MediaCarouselItem> {
     final colors = context.appColors;
 
     if (widget.memory.type == MemoryType.image) {
-      final useNetwork = kIsWeb || _isNetworkContent;
-      if (useNetwork) {
+      if (kIsWeb || _isNetworkContent) {
         return Image.network(
           widget.memory.content,
           fit: BoxFit.contain,
@@ -167,7 +167,6 @@ class _MediaCarouselItemState extends State<MediaCarouselItem> {
       );
     }
 
-    // Fallback/Loading
     return Center(child: CircularProgressIndicator(color: colors.labelPrimary));
   }
 }

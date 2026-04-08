@@ -25,7 +25,8 @@ class CalendarStateProvider extends ChangeNotifier {
   StreamSubscription? _firestoreSubscription;
 
   DateTime? _birthday;
-  AppThemeMode _appThemeMode = AppThemeMode.system;
+  AppThemeMode _appThemeMode = AppThemeMode.light;
+  bool _nudgesEnabled = true;
 
   final ValueNotifier<DateTime?> pulseDate = ValueNotifier(null);
 
@@ -71,6 +72,14 @@ class CalendarStateProvider extends ChangeNotifier {
   AppThemeMode get appThemeMode => _appThemeMode;
 
   bool get isTimeAwareMode => _appThemeMode == AppThemeMode.timeAware;
+
+  bool get nudgesEnabled => _nudgesEnabled;
+
+  Future<void> setNudgesEnabled(bool value) async {
+    _nudgesEnabled = value;
+    await _box.put('nudges_enabled', value);
+    notifyListeners();
+  }
 
   /// Maps our custom enum to Flutter's ThemeMode for MaterialApp.
   /// Time-aware mode uses the dark scaffold/chrome.
@@ -144,6 +153,7 @@ class CalendarStateProvider extends ChangeNotifier {
     for (var key in _box.keys) {
       if (key == 'user_birthday') continue;
       if (key == 'app_theme_mode') continue;
+      if (key == 'nudges_enabled') continue;
       final jsonStr = _box.get(key) as String;
       _dayDataMap[key.toString()] = DayData.fromJson(jsonDecode(jsonStr));
     }
@@ -157,6 +167,11 @@ class CalendarStateProvider extends ChangeNotifier {
     if (themeModeInt != null) {
       _appThemeMode = AppThemeMode.values[themeModeInt.clamp(0, AppThemeMode.values.length - 1)];
     }
+    // Load nudges toggle (defaults to true if not set)
+    final nudgesVal = _box.get('nudges_enabled');
+    if (nudgesVal is bool) {
+      _nudgesEnabled = nudgesVal;
+    }
     notifyListeners();
   }
 
@@ -169,18 +184,70 @@ class CalendarStateProvider extends ChangeNotifier {
   }
 
   Future<void> addMemory(DateTime date, MemoryItem item) async {
+    return addMemories(date, [item]);
+  }
+
+  Future<void> addMemories(DateTime date, List<MemoryItem> items) async {
+    if (items.isEmpty) return;
     final key = _formatDateKey(date);
     final currentData = getDayData(date);
-    final updatedMemories = List<MemoryItem>.from(currentData.memories)..add(item);
+    final updatedMemories = List<MemoryItem>.from(currentData.memories)..addAll(items);
     final updatedData = DayData(date: date, memories: updatedMemories);
 
     if (isLoggedIn) {
-      await _firestore
-          .collection('users')
-          .doc(_currentUser!.uid)
-          .collection('days')
-          .doc(key)
-          .set(updatedData.toJson(), SetOptions(merge: true));
+      _firestoreDataMap[key] = updatedData;
+      notifyListeners();
+      try {
+        await _firestore
+            .collection('users')
+            .doc(_currentUser!.uid)
+            .collection('days')
+            .doc(key)
+            .set(updatedData.toJson(), SetOptions(merge: true));
+      } catch (e) {
+        debugPrint("Error adding memories to Firestore: $e");
+      }
+    } else {
+      _dayDataMap[key] = updatedData;
+      await _box.put(key, jsonEncode(updatedData.toJson()));
+      notifyListeners();
+    }
+  }
+
+  /// Swap a memory's content (e.g. local path → Firebase URL) after a
+  /// background upload finishes. No-op if the item no longer exists.
+  Future<void> updateMemoryContent(DateTime date, String itemId, String newContent) async {
+    final key = _formatDateKey(date);
+    final currentData = getDayData(date);
+    final idx = currentData.memories.indexWhere((m) => m.id == itemId);
+    if (idx == -1) return;
+
+    final old = currentData.memories[idx];
+    final updated = MemoryItem(
+      id: old.id,
+      type: old.type,
+      content: newContent,
+      createdAt: old.createdAt,
+      waveformData: old.waveformData,
+    );
+
+    final updatedMemories = List<MemoryItem>.from(currentData.memories);
+    updatedMemories[idx] = updated;
+    final updatedData = DayData(date: date, memories: updatedMemories);
+
+    if (isLoggedIn) {
+      _firestoreDataMap[key] = updatedData;
+      notifyListeners();
+      try {
+        await _firestore
+            .collection('users')
+            .doc(_currentUser!.uid)
+            .collection('days')
+            .doc(key)
+            .set(updatedData.toJson(), SetOptions(merge: true));
+      } catch (e) {
+        debugPrint("Error updating memory content: $e");
+      }
     } else {
       _dayDataMap[key] = updatedData;
       await _box.put(key, jsonEncode(updatedData.toJson()));
@@ -214,19 +281,29 @@ class CalendarStateProvider extends ChangeNotifier {
 
     if (isLoggedIn) {
       if (updatedMemories.isEmpty) {
-        await _firestore
-            .collection('users')
-            .doc(_currentUser!.uid)
-            .collection('days')
-            .doc(key)
-            .delete();
+        _firestoreDataMap.remove(key);
       } else {
-        await _firestore
-            .collection('users')
-            .doc(_currentUser!.uid)
-            .collection('days')
-            .doc(key)
-            .set(updatedData.toJson());
+        _firestoreDataMap[key] = updatedData;
+      }
+      notifyListeners();
+      try {
+        if (updatedMemories.isEmpty) {
+          await _firestore
+              .collection('users')
+              .doc(_currentUser!.uid)
+              .collection('days')
+              .doc(key)
+              .delete();
+        } else {
+          await _firestore
+              .collection('users')
+              .doc(_currentUser!.uid)
+              .collection('days')
+              .doc(key)
+              .set(updatedData.toJson());
+        }
+      } catch (e) {
+        debugPrint("Error removing memory from Firestore: $e");
       }
     } else {
       _dayDataMap[key] = updatedData;

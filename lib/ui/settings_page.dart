@@ -16,7 +16,6 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool _timeAwareness = false;
   final TextEditingController _birthdayController = TextEditingController();
 
   @override
@@ -401,8 +400,8 @@ class _SettingsPageState extends State<SettingsPage> {
                         width: 44,
                         height: 28,
                         child: Switch(
-                          value: _timeAwareness,
-                          onChanged: (val) => setState(() => _timeAwareness = val),
+                          value: provider.nudgesEnabled,
+                          onChanged: (val) => provider.setNudgesEnabled(val),
                           activeColor: colors.background,
                           activeTrackColor: colors.labelPrimary,
                           inactiveThumbColor: colors.labelSecondary,
