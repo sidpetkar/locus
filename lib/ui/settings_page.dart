@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../services/notification_service.dart';
 import '../state/calendar_state.dart';
 import '../theme/app_theme.dart';
 import 'widgets/locus_header.dart';
@@ -410,6 +411,40 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 12),
+
+                    // Daily Reminders row
+                    _buildRow(
+                      colors: colors,
+                      leading: Icon(Icons.notifications_outlined, size: 22, color: colors.icon),
+                      title: "Daily Reminders",
+                      subtitle: "4 nudges a day to capture your life",
+                      trailing: SizedBox(
+                        width: 44,
+                        height: 28,
+                        child: Switch(
+                          value: provider.notificationsEnabled,
+                          onChanged: (val) async {
+                            await provider.setNotificationsEnabled(val);
+                            final ns = NotificationService();
+                            if (val) {
+                              await ns.scheduleAll();
+                            } else {
+                              await ns.cancelAll();
+                            }
+                          },
+                          activeColor: colors.background,
+                          activeTrackColor: colors.labelPrimary,
+                          inactiveThumbColor: colors.labelSecondary,
+                          inactiveTrackColor: Colors.transparent,
+                          trackOutlineColor: WidgetStateProperty.all(colors.labelPrimary),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // DEV: Remove before release
+                    _buildTestButtons(colors),
 
                     const Spacer(),
 
@@ -446,6 +481,58 @@ class _SettingsPageState extends State<SettingsPage> {
           ],
         ),
       ),
+    );
+  }
+
+  // DEV: Remove before release
+  Widget _buildTestButtons(AppColorTokens colors) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Test Notifications",
+          style: GoogleFonts.spaceGrotesk(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: colors.labelSecondary,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: NotificationSlot.values.map((slot) {
+            final labels = {
+              NotificationSlot.morning: 'Morning',
+              NotificationSlot.afternoon: 'Afternoon',
+              NotificationSlot.evening: 'Evening',
+              NotificationSlot.night: 'Night',
+            };
+            return Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3),
+                child: OutlinedButton(
+                  onPressed: () =>
+                      NotificationService().triggerTestNotification(slot),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: colors.labelPrimary,
+                    side: BorderSide(color: colors.divider),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    labels[slot]!,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 

@@ -76,17 +76,23 @@ class _DayMemoryPageState extends State<DayMemoryPage> {
   
   Future<void> _saveText() async {
     final text = _textController.text.trim();
-    if (text.isEmpty) return;
-    
     final provider = Provider.of<CalendarStateProvider>(context, listen: false);
     final dayData = provider.getDayData(widget.date);
     
     final existingTextMemories = dayData.memories.where((m) => m.type == MemoryType.text).toList();
-    
-    if (existingTextMemories.isNotEmpty) {
-      await provider.removeMemory(widget.date, existingTextMemories.first.id);
+
+    if (text.isEmpty) {
+      if (existingTextMemories.isNotEmpty) {
+        await provider.removeMemory(widget.date, existingTextMemories.first.id);
+      }
+      return;
     }
-    
+
+    if (existingTextMemories.isNotEmpty) {
+      await provider.updateMemoryContent(widget.date, existingTextMemories.first.id, text);
+      return;
+    }
+
     final item = MemoryItem(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       type: MemoryType.text,

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'state/calendar_state.dart';
 import 'services/auth_service.dart';
+import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
 import 'ui/calendar_home_screen.dart';
 import 'ui/login_page.dart';
@@ -38,6 +39,16 @@ void main() async {
 
   await Hive.initFlutter();
   final box = await Hive.openBox('calendarBox');
+
+  if (!kIsWeb) {
+    final notifService = NotificationService();
+    await notifService.initialize();
+    final notificationsEnabled =
+        box.get('notifications_enabled', defaultValue: true) as bool;
+    if (notificationsEnabled) {
+      await notifService.scheduleAll();
+    }
+  }
 
   runApp(
     MultiProvider(

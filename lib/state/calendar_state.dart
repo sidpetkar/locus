@@ -27,6 +27,7 @@ class CalendarStateProvider extends ChangeNotifier {
   DateTime? _birthday;
   AppThemeMode _appThemeMode = AppThemeMode.light;
   bool _nudgesEnabled = true;
+  bool _notificationsEnabled = true;
 
   final ValueNotifier<DateTime?> pulseDate = ValueNotifier(null);
 
@@ -78,6 +79,14 @@ class CalendarStateProvider extends ChangeNotifier {
   Future<void> setNudgesEnabled(bool value) async {
     _nudgesEnabled = value;
     await _box.put('nudges_enabled', value);
+    notifyListeners();
+  }
+
+  bool get notificationsEnabled => _notificationsEnabled;
+
+  Future<void> setNotificationsEnabled(bool value) async {
+    _notificationsEnabled = value;
+    await _box.put('notifications_enabled', value);
     notifyListeners();
   }
 
@@ -154,6 +163,8 @@ class CalendarStateProvider extends ChangeNotifier {
       if (key == 'user_birthday') continue;
       if (key == 'app_theme_mode') continue;
       if (key == 'nudges_enabled') continue;
+      if (key == 'notifications_enabled') continue;
+      if (key == 'used_morning_indices') continue;
       final jsonStr = _box.get(key) as String;
       _dayDataMap[key.toString()] = DayData.fromJson(jsonDecode(jsonStr));
     }
@@ -172,13 +183,17 @@ class CalendarStateProvider extends ChangeNotifier {
     if (nudgesVal is bool) {
       _nudgesEnabled = nudgesVal;
     }
+    final notifVal = _box.get('notifications_enabled');
+    if (notifVal is bool) {
+      _notificationsEnabled = notifVal;
+    }
     notifyListeners();
   }
 
   DayData getDayData(DateTime date) {
     final key = _formatDateKey(date);
     if (isLoggedIn) {
-      return _firestoreDataMap[key] ?? DayData(date: date, memories: []);
+      return _firestoreDataMap[key] ?? _dayDataMap[key] ?? DayData(date: date, memories: []);
     }
     return _dayDataMap[key] ?? DayData(date: date, memories: []);
   }
@@ -195,6 +210,7 @@ class CalendarStateProvider extends ChangeNotifier {
     final updatedData = DayData(date: date, memories: updatedMemories);
 
     if (isLoggedIn) {
+      _dayDataMap[key] = updatedData;
       _firestoreDataMap[key] = updatedData;
       notifyListeners();
       try {
@@ -236,6 +252,7 @@ class CalendarStateProvider extends ChangeNotifier {
     final updatedData = DayData(date: date, memories: updatedMemories);
 
     if (isLoggedIn) {
+      _dayDataMap[key] = updatedData;
       _firestoreDataMap[key] = updatedData;
       notifyListeners();
       try {
@@ -281,8 +298,10 @@ class CalendarStateProvider extends ChangeNotifier {
 
     if (isLoggedIn) {
       if (updatedMemories.isEmpty) {
+        _dayDataMap.remove(key);
         _firestoreDataMap.remove(key);
       } else {
+        _dayDataMap[key] = updatedData;
         _firestoreDataMap[key] = updatedData;
       }
       notifyListeners();

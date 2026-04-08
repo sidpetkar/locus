@@ -54,6 +54,9 @@ dependencies:
   google_sign_in_web: ^0.12.4+4
   flutter_image_compress: ^2.3.0
   video_compress: ^3.1.3
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4
+  flutter_svg: ^2.0.17
 
 dev_dependencies:
   flutter_test:
@@ -76,6 +79,14 @@ flutter:
   assets:
     - assets/locus-icon.png
     - assets/google-g-logo.png
+    - assets/fm-dm.png
+    - assets/fm-lm.png
+    - assets/fq-dm.png
+    - assets/fq-lm.png
+    - assets/lq-dm.png
+    - assets/lq-lm.png
+    - assets/nm-dm.png
+    - assets/nm-lm.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../services/moon_phase_service.dart';
 import '../../state/calendar_state.dart';
 import '../../models/memory_item.dart';
 import '../../theme/app_theme.dart';
@@ -27,9 +28,16 @@ class DateCell extends StatefulWidget {
   State<DateCell> createState() => _DateCellState();
 }
 
-class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin {
+class _DateCellState extends State<DateCell> with TickerProviderStateMixin {
   late AnimationController _pulseController;
+  late AnimationController _moonController;
   Timer? _minuteTimer;
+  Timer? _moonHoldTimer;
+  MoonPhase? _moonPhase;
+  bool _showingMoon = false;
+
+  static const _moonHoldDuration = Duration(seconds: 12);
+  static const _moonInitialDelay = Duration(seconds: 15);
 
   @override
   void initState() {
@@ -38,6 +46,31 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
+    _moonController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _moonPhase = widget.date != null
+        ? MoonPhaseService.getPhase(widget.date!)
+        : null;
+    if (_moonPhase != null) {
+      _moonController.addStatusListener(_onMoonAnimDone);
+      _moonHoldTimer = Timer(_moonInitialDelay, _triggerMoonSlide);
+    }
+  }
+
+  void _triggerMoonSlide() {
+    if (!mounted) return;
+    _moonController.forward(from: 0.0);
+  }
+
+  void _onMoonAnimDone(AnimationStatus status) {
+    if (status != AnimationStatus.completed) return;
+    _showingMoon = !_showingMoon;
+    _moonController.reset();
+    setState(() {});
+    _moonHoldTimer?.cancel();
+    _moonHoldTimer = Timer(_moonHoldDuration, _triggerMoonSlide);
   }
 
   void _ensureMinuteTimer(bool shouldRun) {
@@ -54,7 +87,12 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
   @override
   void dispose() {
     _minuteTimer?.cancel();
+    _moonHoldTimer?.cancel();
+    if (_moonPhase != null) {
+      _moonController.removeStatusListener(_onMoonAnimDone);
+    }
     _pulseController.dispose();
+    _moonController.dispose();
     super.dispose();
   }
 
@@ -127,6 +165,13 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
       cellColors = colors;
     }
 
+    final bool isDarkCell;
+    if (isTimeAware) {
+      isDarkCell = cellColors == darkTokens;
+    } else {
+      isDarkCell = Theme.of(context).brightness == Brightness.dark;
+    }
+
     final heroTag = 'day_cell_${widget.date!.year}_${widget.date!.month}_${widget.date!.day}';
     final imageItems = dayData.memories
         .where((m) => m.type == MemoryType.image || m.type == MemoryType.video)
@@ -139,6 +184,7 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
       isToday: isToday,
       hasMemories: hasMemories,
       items: items,
+      isDark: isDarkCell,
     );
 
     // Time-aware today: progressive fill (dark overlay clipped from top)
@@ -150,6 +196,7 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
         isToday: true,
         hasMemories: hasMemories,
         items: items,
+        isDark: true,
       );
 
       cellContent = Stack(
@@ -237,12 +284,76 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
     );
   }
 
-  /// Builds the visual cell rectangle (background + border + day number + thumbnails).
+  Widget _buildDayNumber(AppColorTokens cellColors, bool isToday) {
+    return SizedBox(
+      height: 20,
+      child: Text(
+        '${widget.date!.day}',
+        style: GoogleFonts.spaceGrotesk(
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+          letterSpacing: 0,
+          color: widget.date!.weekday == 7
+              ? Colors.red
+              : (isToday ? cellColors.labelPrimary : cellColors.labelSecondary),
+          decoration: isToday ? TextDecoration.underline : null,
+          decorationColor: cellColors.labelPrimary,
+          decorationThickness: 2.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMoonSvg(bool isDark) {
+    final svgPath = MoonPhaseService.getAssetPath(_moonPhase!, isDark: isDark);
+    return Image.asset(
+      svgPath,
+      height: 20,
+      width: 20,
+      fit: BoxFit.contain,
+    );
+  }
+
+  Widget _buildMoonTransition(AppColorTokens cellColors, bool isToday, bool isDark) {
+    final Widget outgoing = _showingMoon
+        ? _buildMoonSvg(isDark)
+        : _buildDayNumber(cellColors, isToday);
+    final Widget incoming = _showingMoon
+        ? _buildDayNumber(cellColors, isToday)
+        : _buildMoonSvg(isDark);
+
+    return SizedBox(
+      height: 20,
+      child: ClipRect(
+        child: AnimatedBuilder(
+          animation: _moonController,
+          builder: (context, _) {
+            final t = Curves.easeInOutCubic.transform(_moonController.value);
+            return Stack(
+              children: [
+                FractionalTranslation(
+                  translation: Offset(0, -t),
+                  child: outgoing,
+                ),
+                if (_moonController.isAnimating)
+                  FractionalTranslation(
+                    translation: Offset(0, 1.0 - t),
+                    child: incoming,
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildCellContent({
     required AppColorTokens cellColors,
     required bool isToday,
     required bool hasMemories,
     required List<MemoryItem> items,
+    required bool isDark,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -256,20 +367,9 @@ class _DateCellState extends State<DateCell> with SingleTickerProviderStateMixin
           Positioned(
             top: 8,
             right: 8,
-            child: Text(
-              '${widget.date!.day}',
-              style: GoogleFonts.spaceGrotesk(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                letterSpacing: 0,
-                color: widget.date!.weekday == 7
-                    ? Colors.red
-                    : (isToday ? cellColors.labelPrimary : cellColors.labelSecondary),
-                decoration: isToday ? TextDecoration.underline : null,
-                decorationColor: cellColors.labelPrimary,
-                decorationThickness: 2.5,
-              ),
-            ),
+            child: _moonPhase != null
+                ? _buildMoonTransition(cellColors, isToday, isDark)
+                : _buildDayNumber(cellColors, isToday),
           ),
           if (hasMemories)
             Positioned(
